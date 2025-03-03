@@ -9,7 +9,7 @@ import GoogleMaps
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    GMsServices.provideAPI("AIzaSyCHCNTW2GOVPYsrawiuFL_y_9p6B4RkRg0")
+    GMsServices.provideAPI("AIzaSyCz-_EMqr4Syjn9rgeWJBzXjXzSfjLnqmc")
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
