@@ -1,11 +1,13 @@
-Postcode,Building_Address_With_Zip_Code,Latitude,Longitude
-10065,"861 Lexington Ave, New York, NY 10065",40.76583587633312,-73.96535800402937
-10021,"985 Lexington Ave, New York, NY 10021",40.76985970975908,-73.96252555076184
-10065,"1136 3rd Ave, New York, NY 10065",40.766398343371144,-73.96343126392401
-10065,"1065 3rd Ave, New York, NY 10065",40.764063294685535,-73.96471314150851
-10021,"1314 1st Ave, New York, NY 10021",40.76691888480264,-73.9564542302694
-10065,"540 Park Ave, New York, NY 10065",40.76465989568355,-73.96828813634292
-10065,"1273 1st Ave, New York, NY 10065",40.765813681449124,-73.95779646318766
-10021,"1294 3rd Ave, New York, NY 10021",40.77143775838979,-73.95970841893077
-10021,"993 Lexington Ave, New York, NY 10021",40.77002106619352,-73.96234745406151
-10021,"1247 3rd Ave, New York, NY 10021",40.76983957085073,-73.96058019408609
+Postcode,Building_Address_With_Zip_Code,Hours_Of_Access,Latitude,Longitude
+10065,"Le Pain Quotidien (861 Lexington Ave, New York, NY 10065)","Everyday: 6:30 AM - 7 PM",40.765749,-73.965335
+10021,"Blank Street Coffee (985 Lexington Ave, New York, NY 10021)","Weekdays: 6:30 AM - 6PM, Weekends: 7:30 AM - 4 PM",40.769776,-73.962497
+10065,"Sant Ambroeus Coffee Bar at Hanley (1136 3rd Ave, New York, NY 10065)","Weekdays: 7:30 AM - 5 PM, Weekends: 8 AM - 5 PM",40.766233,-73.963432
+10065,"Black Press Coffee (1065 3rd Ave, New York, NY 10065)","Everyday: 7 AM - 6 PM",40.763833,-73.964676
+10021,"The Coffee Inn (1314 1st Ave, New York, NY 10021)","Weekdays: 6 AM - 6 PM, Weekends: 6 AM - 5 PM",40.766722,-73.956425
+10065,"Sant Ambroeus Coffee Bar at Loews Regency Hotel (540 Park Ave, New York, NY 10065)","Weekdays: 7 AM - 7 PM, Weekends: 8 AM - 7 PM",40.764504,-73.969123
+10065,"Gregorys Coffee (1273 1st Ave, New York, NY 10065)","Weekdays: 6 AM - 6 PM, Weekends: 7 AM - 5 PM",40.765711,-73.957914
+10021,"Breads Bakery (1294 3rd Ave, New York, NY 10021)","Everyday: 7 AM - 8 PM",40.771345,-73.959746
+10021,"JOE & THE JUICE (993 Lexington Ave, New York, NY 10021)","Everyday: 7 AM - 7 PM",40.770019,-73.962352
+10021,"Julien Boulangerie (1247 3rd Ave, New York, NY 10021)","Weekdays: 7 AM - 7 PM, Weekends: 8 AM - 7 PM",40.769466,-73.960492
+10021,"Ralph's Coffee (888 Madison Ave, New York, NY 10021)","Sunday - Thursday: 8 AM - 6PM, Friday - Saturday: 8 AM - 7 PM",40.771659,-73.965766
+10021,"787 Coffee (340 E 70th St, New York, NY 10021)","Everyday: 7 AM - 7 PM",40.766569,-73.957416
