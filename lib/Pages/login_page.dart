@@ -1,37 +1,163 @@
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatelessWidget {
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    // Using the same color for both buttons
+    final buttonColor = Colors.green.withOpacity(0.6);
+    
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Login'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            TextField(
-              controller: _usernameController,
-              decoration: InputDecoration(labelText: 'Username'),
+      body: Container(
+        // Create gradient background similar to the image
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF00BFA5), // Teal/turquoise color
+              Color(0xFF8BC34A), // Light green
+              Color(0xFF1A237E), // Dark blue at bottom
+            ],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              children: [
+                SizedBox(height: 40),
+                // Circular logo placeholder
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '[placeholder for logo]',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                Spacer(),
+                // Email field
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'email',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.zero, // Square corners
+                      ),
+                      child: TextField(
+                        controller: _emailController,
+                        style: TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+                // Password field
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'password',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.zero, // Square corners
+                      ),
+                      child: TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        style: TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 30),
+                // Login button - square
+                Container(
+                  width: 160, // Fixed width for square-ish appearance
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _login(context);
+                    },
+                    child: Text(
+                      'Login',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: buttonColor, // Same color for both buttons
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero, // Square corners
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 15),
+                // Create Account button - square with matching color
+                Container(
+                  width: 160, // Fixed width for square-ish appearance
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/register');
+                    },
+                    child: Text(
+                      'Create Account',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: buttonColor, // Same color for both buttons
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero, // Square corners
+                      ),
+                    ),
+                  ),
+                ),
+                Spacer(),
+              ],
             ),
-            TextField(
-              controller: _passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                _login(context);
-              },
-              child: Text('Login'),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -39,11 +165,11 @@ class LoginPage extends StatelessWidget {
 
   void _login(BuildContext context) {
     // Mock authentication logic
-    String username = _usernameController.text;
+    String email = _emailController.text;
     String password = _passwordController.text;
 
     // Validate credentials (You should replace this with actual authentication logic)
-    if (username == 'user' && password == 'password') {
+    if (email == 'user' && password == 'password') {
       Navigator.pushReplacementNamed(
           context, '/map'); // Navigate to MapPage after successful login
     } else {
@@ -52,7 +178,7 @@ class LoginPage extends StatelessWidget {
         context: context,
         builder: (context) => AlertDialog(
           title: Text('Login Failed'),
-          content: Text('Invalid username or password.'),
+          content: Text('Invalid email or password.'),
           actions: [
             TextButton(
               onPressed: () {
