@@ -6,6 +6,7 @@ import 'Pages/settings_page.dart';
 import 'Pages/reviews_page.dart';
 import 'Pages/login_page.dart';
 import 'Pages/map_page.dart';
+import 'Pages/create_account_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -22,6 +23,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/login', // Set initial route to login
       routes: {
         '/login': (context) => LoginPage(),
+        '/register': (context) => CreateAccountPage(),
         '/map': (context) => MapPage(),
         '/home': (context) => home.HomePage(), // Use alias for HomePage
         '/settings': (context) => SettingsPage(),
