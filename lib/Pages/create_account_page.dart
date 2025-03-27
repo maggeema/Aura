@@ -1,134 +1,144 @@
 import 'package:flutter/material.dart';
 import 'package:date_format_field/date_format_field.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class CreateAccountPage extends StatelessWidget {
+class CreateAccountPage extends StatefulWidget {
+  @override
+  _CreateAccountPageState createState() => _CreateAccountPageState();
+}
+
+class _CreateAccountPageState extends State<CreateAccountPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  final TextEditingController _birthdayController = TextEditingController();
+
+  DateTime? _birthday;
 
   @override
   Widget build(BuildContext context) {
-    final buttonColor = Colors.green.withOpacity(0.6);
+    final buttonColor = Colors.grey.withOpacity(0.6);
+    final darkGrey = Color(0xFF333333);
 
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF00BFA5),
-              Color(0xFF8BC34A),
-              Color(0xFF1A237E),
-            ],
-            stops: [0.0, 0.5, 1.0],
+          image: DecorationImage(
+            image: AssetImage("assets/background.jpg"),
+            fit: BoxFit.cover,
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                children: [
-                  SizedBox(height: 40),
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '[placeholder for logo]',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      children: [
+                        SizedBox(height: 40),
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/logo.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 40),
-                  _buildLabel('email'),
-                  _buildTextField(_emailController),
-                  SizedBox(height: 20),
-                  _buildLabel('password'),
-                  _buildTextField(_passwordController, obscure: true),
-                  SizedBox(height: 20),
-                  _buildLabel('confirm password'),
-                  _buildTextField(_confirmPasswordController, obscure: true),
-                  SizedBox(height: 20),
-                  _buildLabel('birthday'),
-                  Container(
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.zero,
-                    ),
-                    child: DateFormatField(
-                      type: DateFormatType.type2,
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                        hintText: 'MM/DD/YYYY',
-                        hintStyle: TextStyle(color: Colors.white54),
-                      ),
-                      onComplete: (date) {
-                        _birthdayController.text = date.toString();
-                      },
-                    ),
-                  ),
-                  SizedBox(height: 30),
-                  SizedBox(
-                    width: 160,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        _signUp(context);
-                      },
-                      child: Text('Sign Up', style: TextStyle(fontSize: 16)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: buttonColor,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
+                        SizedBox(height: 20),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Icon(Icons.arrow_back, color: darkGrey),
+                            label: Text('Back to Login', style: TextStyle(color: darkGrey)),
+                          ),
                         ),
-                      ),
+                        SizedBox(height: 10),
+                        _buildLabel('email', darkGrey),
+                        _buildTextField(_emailController, darkGrey),
+                        SizedBox(height: 20),
+                        _buildLabel('password', darkGrey),
+                        _buildTextField(_passwordController, darkGrey, obscure: true),
+                        SizedBox(height: 20),
+                        _buildLabel('confirm password', darkGrey),
+                        _buildTextField(_confirmPasswordController, darkGrey, obscure: true),
+                        SizedBox(height: 20),
+                        _buildLabel('birthday', darkGrey),
+                        Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.2),
+                            borderRadius: BorderRadius.zero,
+                          ),
+                          child: DateFormatField(
+                            type: DateFormatType.type2,
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                              hintText: 'MM/DD/YYYY',
+                              hintStyle: TextStyle(color: darkGrey),
+                            ),
+                            onComplete: (date) {
+                              setState(() {
+                                _birthday = date;
+                              });
+                            },
+                          ),
+                        ),
+                        SizedBox(height: 30),
+                        SizedBox(
+                          width: 160,
+                          child: ElevatedButton(
+                            onPressed: () => _signUp(context),
+                            child: Text('Sign Up', style: TextStyle(fontSize: 16, color: darkGrey)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: buttonColor,
+                              padding: EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.zero,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 40),
+                      ],
                     ),
                   ),
-                  SizedBox(height: 40),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(String text, Color color) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: Text(
-        text,
-        style: TextStyle(color: Colors.white, fontSize: 14),
-      ),
+      child: Text(text, style: TextStyle(color: color, fontSize: 14)),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, {bool obscure = false}) {
+  Widget _buildTextField(TextEditingController controller, Color color, {bool obscure = false}) {
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.grey.withOpacity(0.2),
         borderRadius: BorderRadius.zero,
       ),
       child: TextField(
         controller: controller,
         obscureText: obscure,
-        style: TextStyle(color: Colors.white),
+        style: TextStyle(color: color),
         decoration: InputDecoration(
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(horizontal: 16),
@@ -137,13 +147,12 @@ class CreateAccountPage extends StatelessWidget {
     );
   }
 
-  void _signUp(BuildContext context) {
+  void _signUp(BuildContext context) async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
-    final birthday = _birthdayController.text;
 
-    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty || birthday.isEmpty) {
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty || _birthday == null) {
       _showErrorDialog(context, 'Please fill out all fields.');
       return;
     }
@@ -153,8 +162,48 @@ class CreateAccountPage extends StatelessWidget {
       return;
     }
 
-    // ✅ Simulate success
-    Navigator.pushReplacementNamed(context, '/map');
+    final now = DateTime.now();
+    final age = now.difference(_birthday!).inDays ~/ 365;
+
+    if (age < 16) {
+      _showErrorDialog(context, 'You must be at least 16 years old to sign up.');
+      return;
+    }
+
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+            'email': email,
+            'birthday': _birthday!.toIso8601String(),
+            'createdAt': Timestamp.now(),
+          });
+
+      Navigator.pushReplacementNamed(context, '/map');
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+      switch (e.code) {
+        case 'email-already-in-use':
+          errorMessage = 'This email is already in use.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'This email address is not valid.';
+          break;
+        case 'weak-password':
+          errorMessage = 'Password should be at least 6 characters.';
+          break;
+        default:
+          errorMessage = 'Something went wrong. Please try again.';
+      }
+
+      _showErrorDialog(context, errorMessage);
+    } catch (e) {
+      _showErrorDialog(context, 'Unexpected error: ${e.toString()}');
+    }
   }
 
   void _showErrorDialog(BuildContext context, String message) {

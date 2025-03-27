@@ -1,14 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:csv/csv.dart';
-import 'home_page.dart' as home;
-import 'settings_page.dart';
-import 'package:flutter/foundation.dart'; 
-import 'reviews_page.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart'; // Needed for kIsWeb
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -18,18 +17,56 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
-  Location _locationController = Location();
-  final Completer<GoogleMapController> _mapController =
-      Completer<GoogleMapController>();
-  static const LatLng manhattan = LatLng(40.7588, -73.9851);
-  LatLng? _currentP;
+  final Location _locationController = Location();
+  final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
+  static const LatLng defaultLocation = LatLng(40.768034137130904, -73.96454910893894);
   Set<Marker> _markers = {};
+  Set<Circle> _circles = {};
+  Map<String, List<String>> _reviews = {}; // Local reviews
+  int auraPoints = 0;
 
   @override
   void initState() {
     super.initState();
     getLocationUpdates();
     loadCsvData();
+    loadAuraPoints();
+  }
+
+  Future<void> loadAuraPoints() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      setState(() {
+        auraPoints = doc.data()?['auraPoints'] ?? 0;
+      });
+    }
+  }
+
+  void _showAuraPopup(BuildContext context) {
+    final progress = auraPoints.clamp(0, 1000) / 1000;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Aura Points'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('1000 points = Top Contributor!'),
+            SizedBox(height: 16),
+            LinearProgressIndicator(value: progress),
+            SizedBox(height: 8),
+            Text('${(progress * 100).round()}% complete'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          )
+        ],
+      ),
+    );
   }
 
   @override
@@ -38,211 +75,114 @@ class _MapPageState extends State<MapPage> {
       body: Stack(
         children: [
           GoogleMap(
-            myLocationEnabled: true, // ✅ Only works on Android/iOS (not Web)
-            myLocationButtonEnabled: true, // ✅ Allows recentering
-            onMapCreated: (GoogleMapController controller) {
-              _mapController.complete(controller);
-            },
-            initialCameraPosition: CameraPosition(
-              target: LatLng(40.768034137130904, -73.96454910893894), // Hunter College Starbucks
-              zoom: 17, // Adjust zoom for visibility
-            ),
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            zoomGesturesEnabled: true,
+            onMapCreated: (controller) => _mapController.complete(controller),
+            initialCameraPosition: CameraPosition(target: defaultLocation, zoom: 17),
             markers: _markers,
-            circles: _circles, // ✅ Ensure the blue circle is included
+            circles: _circles,
           ),
           Positioned(
-            bottom: 80,
-            right: 10,
-            child: Column(
-              children: [
-              FloatingActionButton(
-                heroTag: "current_location_btn",
-                onPressed: () async {
-                  final GoogleMapController controller = await _mapController.future;
-                  controller.animateCamera(
-                    CameraUpdate.newLatLng(LatLng(40.768034137130904, -73.96454910893894)), // Move to Blue Dot
-                  );
-                },
-                child: Icon(Icons.my_location), // Standard "current location" icon
-              ),
-                SizedBox(height: 10),
-                FloatingActionButton(
-                  onPressed: () async {
-                    _currentP = LatLng(40.768034137130904, -73.96454910893894); // ✅ Set "current location" to Hunter College Starbucks
-
-                    final result = await showDialog<Map<String, String>>(
-                      context: context,
-                      builder: (context) => CafeInfoDialog(), // ✅ Opens dialog for user to enter details
-                    );
-
-                    if (result != null && result.isNotEmpty) {
-                      final marker = Marker(
-                        markerId: MarkerId(DateTime.now().toString()), // ✅ Unique marker ID
-                        position: _currentP!, // ✅ Uses Hunter College Starbucks as location
-                        infoWindow: InfoWindow(
-                          title: result['name'], // ✅ Uses user input as title
-                          snippet: result['address'], // ✅ Uses user input as address
-                          onTap: () {
-                            Navigator.pushNamed(context, '/reviews'); // ✅ Navigates to reviews page
-                          },
-                        ),
-                        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen), // ✅ Green Marker
-                      );
-
-                      setState(() {
-                        _markers.add(marker); // ✅ Adds new marker to the map
-                      });
-                    }
-                  },
-                  child: Icon(Icons.add_location), // ✅ "Add Location" Icon
+            top: 40,
+            right: 20,
+            child: GestureDetector(
+              onTap: () => _showAuraPopup(context),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Color(0xFFFFFACD),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-              ],
+                child: Text(
+                  '$auraPoints pts',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: BottomAppBar(
-        child: Container(
-          height: MediaQuery.of(context).size.height * 0.1,
-          color: Colors.white,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              IconButton(
-                icon: Icon(Icons.home),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/home');
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.settings),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/settings');
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.reviews),
-                onPressed: () {
-                  Navigator.pushNamed(context, '/reviews');
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _cameraToPosition(LatLng pos) async {
-    final GoogleMapController controller = await _mapController.future;
-    CameraPosition _newCameraPosition = CameraPosition(
-      target: pos,
-      zoom: 11,
-    );
-    await controller.animateCamera(
-      CameraUpdate.newCameraPosition(_newCameraPosition),
     );
   }
 
   Future<void> getLocationUpdates() async {
-    bool _serviceEnabled;
-    PermissionStatus _permissionGranted;
-
-    _serviceEnabled = await _locationController.serviceEnabled();
-    if (!_serviceEnabled) {
-      _serviceEnabled = await _locationController.requestService();
-      if (!_serviceEnabled) {
-        print("⚠️ Location services are disabled.");
-        return;
-      }
+    bool serviceEnabled = await _locationController.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await _locationController.requestService();
+      if (!serviceEnabled) return;
     }
 
-    _permissionGranted = await _locationController.hasPermission();
-    if (_permissionGranted == PermissionStatus.denied) {
-      _permissionGranted = await _locationController.requestPermission();
-      if (_permissionGranted != PermissionStatus.granted) {
-        print("⚠️ Location permission denied.");
-        return;
-      }
+    PermissionStatus permissionGranted = await _locationController.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await _locationController.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) return;
     }
 
-    print("✅ Location permission granted!");
+    if (kIsWeb) {
+      final Circle currentLocationCircle = Circle(
+        circleId: CircleId("current_location"),
+        center: defaultLocation,
+        radius: 15,
+        fillColor: Color.fromARGB(100, 66, 133, 244),
+        strokeColor: Color.fromARGB(255, 66, 133, 244),
+        strokeWidth: 2,
+      );
+
+      final Circle searchRadiusCircle = Circle(
+        circleId: CircleId("search_radius"),
+        center: defaultLocation,
+        radius: 800,
+        fillColor: Color.fromARGB(50, 66, 133, 244),
+        strokeColor: Color.fromARGB(150, 66, 133, 244),
+        strokeWidth: 2,
+      );
+
+      setState(() {
+        _circles.addAll([currentLocationCircle, searchRadiusCircle]);
+      });
+    }
   }
-
-  Set<Circle> _circles = {}; // ✅ Define a Set to store the blue circle
 
   Future<void> loadCsvData() async {
     final rawData = await rootBundle.loadString('assets/locations.csv');
-    List<List<dynamic>> rows = const CsvToListConverter().convert(rawData);
+    final rows = const CsvToListConverter().convert(rawData);
 
     for (var row in rows.skip(1)) {
       try {
-        final double lat = double.parse(row[3].toString());
-        final double lon = double.parse(row[4].toString());
-        final LatLng position = LatLng(lat, lon);
+        final lat = double.parse(row[3].toString());
+        final lon = double.parse(row[4].toString());
+        final String markerId = '${row[3]}_${row[4]}';
+        final String name = row[1];
+        final String address = row[1];
+        final position = LatLng(lat, lon);
 
         final marker = Marker(
-          markerId: MarkerId(row[0].toString() + "_" + row[1]), // Unique marker ID
+          markerId: MarkerId(markerId),
           position: position,
-          infoWindow: InfoWindow(
-            title: row[1],
-            snippet: row[2],
-          ),
+          onTap: () => _showCafeDetails(context, name, address, markerId),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         );
 
         setState(() {
           _markers.add(marker);
         });
       } catch (e) {
-        print("⚠️ Error parsing row: $row - Error: $e");
+        print("⚠️ Error parsing row: $row — $e");
       }
     }
 
-    // ✅ Add a Blue Circle Instead of a Marker for "Current Location" on Web
-    if (kIsWeb) {
-      print("🌍 Running on Flutter Web - Adding a manual blue circle!");
-
-      final LatLng hunterCollegeLocation = LatLng(40.768034137130904, -73.96454910893894);
-
-      // Small Blue Circle for Current Location
-      final Circle smallBlueDotCircle = Circle(
-        circleId: CircleId("small_user_location"),
-        center: hunterCollegeLocation,
-        radius: 15, // 🔵 Small circle for precise location
-        fillColor: Color.fromARGB(100, 66, 133, 244), // ✅ Semi-transparent blue
-        strokeColor: Color.fromARGB(255, 66, 133, 244), // ✅ Strong blue outline
-        strokeWidth: 2, // ✅ Thin outline
-      );
-
-      // Large Search Area Circle
-      final Circle searchRadiusCircle = Circle(
-        circleId: CircleId("search_radius"),
-        center: hunterCollegeLocation,
-        radius: 800, // 🔵 Large search area radius (adjust as needed)
-        fillColor: Color.fromARGB(50, 66, 133, 244), // ✅ More transparent blue
-        strokeColor: Color.fromARGB(150, 66, 133, 244), // ✅ Semi-bold blue outline
-        strokeWidth: 2, // ✅ Thin outline
-        consumeTapEvents: false,
-      );
-
-      // Add both circles to `_circles`
-      setState(() {
-        _circles.add(smallBlueDotCircle);
-        _circles.add(searchRadiusCircle);
-        print("📍 Small blue dot & search radius circle added at $hunterCollegeLocation");
-      });
-    }
-
-    adjustCameraToMarkers(); // Ensure all markers & circle are visible
+    adjustCameraToMarkers();
   }
 
   Future<void> adjustCameraToMarkers() async {
     if (_markers.isEmpty) return;
 
-    final GoogleMapController controller = await _mapController.future;
-    LatLngBounds bounds = _createBounds(_markers);
-    CameraUpdate cameraUpdate = CameraUpdate.newLatLngBounds(bounds, 100);
-    controller.animateCamera(cameraUpdate);
+    final controller = await _mapController.future;
+    final bounds = _createBounds(_markers);
+    controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
   }
 
   LatLngBounds _createBounds(Set<Marker> markers) {
@@ -251,11 +191,13 @@ class _MapPageState extends State<MapPage> {
     double minLng = markers.first.position.longitude;
     double maxLng = markers.first.position.longitude;
 
-    for (Marker marker in markers) {
-      if (marker.position.latitude < minLat) minLat = marker.position.latitude;
-      if (marker.position.latitude > maxLat) maxLat = marker.position.latitude;
-      if (marker.position.longitude < minLng) minLng = marker.position.longitude;
-      if (marker.position.longitude > maxLng) maxLng = marker.position.longitude;
+    for (final marker in markers) {
+      final lat = marker.position.latitude;
+      final lng = marker.position.longitude;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+      if (lng < minLng) minLng = lng;
+      if (lng > maxLng) maxLng = lng;
     }
 
     return LatLngBounds(
@@ -263,49 +205,75 @@ class _MapPageState extends State<MapPage> {
       northeast: LatLng(maxLat, maxLng),
     );
   }
-}
 
-class CafeInfoDialog extends StatelessWidget {
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController addressController = TextEditingController();
+  void _showCafeDetails(BuildContext context, String name, String address, String markerId) {
+    final List<String> reviews = _reviews[markerId] ?? [];
 
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Cafe Info'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: nameController,
-            decoration: InputDecoration(labelText: 'Cafe Name'),
-          ),
-          TextField(
-            controller: addressController,
-            decoration: InputDecoration(labelText: 'Address'),
-          ),
-        ],
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.35,
+        minChildSize: 0.2,
+        maxChildSize: 0.75,
+        builder: (context, scrollController) {
+          return SingleChildScrollView(
+            controller: scrollController,
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => _launchMapsSearch(address),
+                  child: Text(
+                    'Get Directions on Google Maps',
+                    style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text("Open daily: 8 AM – 8 PM", style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic)),
+                Divider(height: 20),
+                Text("Recent Check-Ins", style: TextStyle(fontWeight: FontWeight.bold)),
+                if (reviews.isEmpty)
+                  Text("No check-ins yet."),
+                for (var review in reviews)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text("• $review"),
+                  ),
+                SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/reviews',
+                      arguments: {
+                        'cafeId': markerId,
+                        'cafeName': name,
+                        'address': address,
+                      },
+                    );
+                  },
+                  child: Text("Add Check-In"),
+                ),
+              ],
+            ),
+          );
+        },
       ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () {
-            if (nameController.text.isNotEmpty &&
-                addressController.text.isNotEmpty) {
-              Navigator.of(context).pop({
-                'name': nameController.text,
-                'address': addressController.text,
-              });
-            }
-          },
-          child: Text('Save'),
-        ),
-      ],
     );
+  }
+
+  void _launchMapsSearch(String address) async {
+    final Uri mapsUrl = Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}");
+    if (await canLaunchUrl(mapsUrl)) {
+      await launchUrl(mapsUrl);
+    } else {
+      print("❌ Could not launch Google Maps");
+    }
   }
 }
