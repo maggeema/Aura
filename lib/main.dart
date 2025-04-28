@@ -6,7 +6,8 @@ import 'Pages/login_page.dart';
 import 'Pages/create_account_page.dart';
 import 'Pages/map_page.dart';
 import 'Pages/reviews_page.dart';
-
+import 'Pages/account_page.dart';
+import 'Pages/past_checkins.dart';
 import 'Pages/upload_cafes.dart'; // ✅ Import the upload script
 
 Future<void> main() async {
@@ -29,6 +30,8 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginPage(),
         '/register': (context) => CreateAccountPage(),
         '/map': (context) => MapPage(),
+        '/account': (context) => AccountPage(),       // ✅ NEW
+        '/checkins': (context) => CheckInsPage(),     // ✅ NEW
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/reviews') {
