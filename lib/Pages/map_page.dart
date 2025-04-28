@@ -5,9 +5,10 @@ import 'package:location/location.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:csv/csv.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/foundation.dart'; // Needed for kIsWeb
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -22,16 +23,39 @@ class _MapPageState extends State<MapPage> {
   static const LatLng defaultLocation = LatLng(40.768034137130904, -73.96454910893894);
   Set<Marker> _markers = {};
   Set<Circle> _circles = {};
-  Map<String, List<String>> _reviews = {}; // Local reviews
   int auraPoints = 0;
+  late BitmapDescriptor redMarker;
+  late BitmapDescriptor greenMarker;
+  late BitmapDescriptor greyMarker;
 
   @override
   void initState() {
     super.initState();
-    getLocationUpdates();
-    loadCsvData();
-    loadAuraPoints();
+    loadCustomMarkers();
+    initAppFlow(); // <- new wrapper function
   }
+
+  Future<void> initAppFlow() async {
+    await getLocationUpdates();      // requests location + permissions
+    await loadCsvData();             // only runs if location is granted
+    await loadAuraPoints();
+  }
+  
+  Future<void> loadCustomMarkers() async {
+    redMarker = await BitmapDescriptor.fromAssetImage(
+      ImageConfiguration(size: Size(72, 72)),
+      'assets/red.png',
+    );
+    greenMarker = await BitmapDescriptor.fromAssetImage(
+      ImageConfiguration(size: Size(72, 72)),
+      'assets/green.png',
+    );
+    greyMarker = await BitmapDescriptor.fromAssetImage(
+      ImageConfiguration(size: Size(72, 72)),
+      'assets/grey.png',
+    );
+  }
+
 
   Future<void> loadAuraPoints() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -85,6 +109,26 @@ class _MapPageState extends State<MapPage> {
             markers: _markers,
             circles: _circles,
           ),
+          Positioned(
+            top: 40,
+            left: 20,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, '/account');
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Color(0xFFFFFACD),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.person, color: Colors.black, size: 22), // 👤 Instead of logout, use "person" icon
+              ),
+            ),
+          ),
+
+
           Positioned(
             top: 40,
             right: 20,
@@ -157,13 +201,35 @@ class _MapPageState extends State<MapPage> {
         final String markerId = '${row[3]}_${row[4]}';
         final String name = row[1];
         final String address = row[1];
+        final String hours = row[2];
         final position = LatLng(lat, lon);
+
+        // 🔎 Check Firestore for seating data before assigning marker
+        final snapshot = await FirebaseFirestore.instance
+            .collection('cafes')
+            .doc(markerId)
+            .collection('reviews')
+            .get();
+
+        final docs = snapshot.docs;
+        BitmapDescriptor markerIcon = greyMarker; // default
+
+        if (docs.isNotEmpty) {
+          final yesCount = docs.where((doc) => doc['seatingOffered'] == 'Yes').length;
+          final noCount = docs.length - yesCount;
+
+          if (yesCount >= noCount) {
+            markerIcon = greenMarker;
+          } else {
+            markerIcon = redMarker;
+          }
+        }
 
         final marker = Marker(
           markerId: MarkerId(markerId),
           position: position,
-          onTap: () => _showCafeDetails(context, name, address, markerId),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          icon: markerIcon,
+          onTap: () => _showCafeDetails(context, name, address, hours, markerId),
         );
 
         setState(() {
@@ -176,6 +242,7 @@ class _MapPageState extends State<MapPage> {
 
     adjustCameraToMarkers();
   }
+
 
   Future<void> adjustCameraToMarkers() async {
     if (_markers.isEmpty) return;
@@ -206,8 +273,55 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  void _showCafeDetails(BuildContext context, String name, String address, String markerId) {
-    final List<String> reviews = _reviews[markerId] ?? [];
+  Future<void> _showCafeDetails(BuildContext context, String name, String address, String hours, String markerId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('cafes')
+        .doc(markerId)
+        .collection('reviews')
+        .orderBy('timestamp', descending: true)
+        .limit(5)
+        .get();
+
+    final reviews = snapshot.docs.map((doc) => doc.data()).toList();
+
+    final recentCheckins = reviews.map((review) {
+      final availability = review['availability'] ?? '';
+      final noise = review['noiseLevel'] ?? '';
+      final seating = review['seatingType'] ?? '';
+      final vibe = review['vibes'] ?? '';
+
+      final timestamp = review['timestamp'] != null
+          ? (review['timestamp'] as Timestamp).toDate()
+          : null;
+
+      final formattedTime = timestamp != null
+          ? DateFormat('MM/dd/yyyy hh:mm a').format(timestamp)
+          : 'Unknown date';
+
+      return "$formattedTime - $availability | $noise | $seating | $vibe";
+    }).toList();
+
+    final hasSeatingList = reviews.map((r) => r['seatingOffered'] ?? '').toList();
+    final hasSeating = hasSeatingList.where((v) => v == 'Yes').length >= (hasSeatingList.length / 2);
+
+    final amenityList = <String>[];
+    for (var review in reviews) {
+      if (review['amenities'] != null) {
+        amenityList.addAll((review['amenities'] as String).split(', '));
+      }
+    }
+
+    final Map<String, int> amenityCounts = {};
+    for (var amenity in amenityList) {
+      amenityCounts[amenity] = (amenityCounts[amenity] ?? 0) + 1;
+    }
+    final sortedAmenities = amenityCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final commonAmenities = sortedAmenities
+        .map((e) => e.key)
+        .where((a) => a.trim().isNotEmpty)
+        .take(3)
+        .toList();
 
     showModalBottomSheet(
       context: context,
@@ -215,18 +329,17 @@ class _MapPageState extends State<MapPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
       builder: (context) => DraggableScrollableSheet(
         expand: false,
-        initialChildSize: 0.35,
-        minChildSize: 0.2,
-        maxChildSize: 0.75,
+        initialChildSize: 0.51,
+        maxChildSize: 0.9,
         builder: (context, scrollController) {
           return SingleChildScrollView(
             controller: scrollController,
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 GestureDetector(
                   onTap: () => _launchMapsSearch(address),
                   child: Text(
@@ -234,18 +347,39 @@ class _MapPageState extends State<MapPage> {
                     style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
                   ),
                 ),
-                SizedBox(height: 12),
-                Text("Open daily: 8 AM – 8 PM", style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic)),
-                Divider(height: 20),
-                Text("Recent Check-Ins", style: TextStyle(fontWeight: FontWeight.bold)),
-                if (reviews.isEmpty)
-                  Text("No check-ins yet."),
-                for (var review in reviews)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Text("• $review"),
+                const SizedBox(height: 8),
+                Text(hours, style: TextStyle(fontStyle: FontStyle.italic)),
+                const Divider(height: 20),
+                if (reviews.isEmpty) ...[
+                  Text("There have been no check-ins at this location lately! Be the first to contribute for 75 Aura Points instead of 50 :)")
+                ] else ...[
+                  Text("Based on recent trends, this location:", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  Text(hasSeating ? "- Offers seating" : "- Does not appear to offer seating"),
+                  if (hasSeating && commonAmenities.isNotEmpty)
+                    Text("- Amenities: ${commonAmenities.join(', ')}"),
+                  const Divider(height: 20),
+                  Text(
+                    hasSeating
+                        ? "Here is the vibes that people are reporting:"
+                        : "Because there is no seating available at this location, there are no vibes available! But update the community below if you feel that this information is incorrect.",
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                SizedBox(height: 12),
+                  const SizedBox(height: 6),
+                  if (hasSeating)
+                    (recentCheckins.isNotEmpty
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: recentCheckins
+                                .map((vibe) => Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 2),
+                                      child: Text("• $vibe"),
+                                    ))
+                                .toList(),
+                          )
+                        : Text("No check-ins yet.")),
+                ],
+                const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.pushNamed(
