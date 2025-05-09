@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'aura_system.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -23,7 +24,7 @@ class _MapPageState extends State<MapPage> {
   static const LatLng defaultLocation = LatLng(40.768034137130904, -73.96454910893894);
   Set<Marker> _markers = {};
   Set<Circle> _circles = {};
-  int auraPoints = 0;
+  int streakCount = 0;
   late BitmapDescriptor redMarker;
   late BitmapDescriptor greenMarker;
   late BitmapDescriptor greyMarker;
@@ -32,15 +33,15 @@ class _MapPageState extends State<MapPage> {
   void initState() {
     super.initState();
     loadCustomMarkers();
-    initAppFlow(); // <- new wrapper function
+    initAppFlow();
   }
 
   Future<void> initAppFlow() async {
-    await getLocationUpdates();      // requests location + permissions
-    await loadCsvData();             // only runs if location is granted
-    await loadAuraPoints();
+    await getLocationUpdates();
+    await loadCsvData();
+    await loadStreakCount();
   }
-  
+
   Future<void> loadCustomMarkers() async {
     redMarker = await BitmapDescriptor.fromAssetImage(
       ImageConfiguration(size: Size(72, 72)),
@@ -56,41 +57,17 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-
-  Future<void> loadAuraPoints() async {
+  Future<void> loadStreakCount() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null) {
       final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      setState(() {
-        auraPoints = doc.data()?['auraPoints'] ?? 0;
-      });
+      final data = doc.data();
+      if (data != null && data.containsKey('streak')) {
+        setState(() {
+          streakCount = data['streak'] ?? 0;
+        });
+      }
     }
-  }
-
-  void _showAuraPopup(BuildContext context) {
-    final progress = auraPoints.clamp(0, 1000) / 1000;
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Aura Points'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('1000 points = Top Contributor!'),
-            SizedBox(height: 16),
-            LinearProgressIndicator(value: progress),
-            SizedBox(height: 8),
-            Text('${(progress * 100).round()}% complete'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
-          )
-        ],
-      ),
-    );
   }
 
   @override
@@ -123,17 +100,15 @@ class _MapPageState extends State<MapPage> {
                   color: Color(0xFFFFFACD),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.person, color: Colors.black, size: 22), // 👤 Instead of logout, use "person" icon
+                child: Icon(Icons.person, color: Colors.black, size: 22),
               ),
             ),
           ),
-
-
           Positioned(
             top: 40,
             right: 20,
             child: GestureDetector(
-              onTap: () => _showAuraPopup(context),
+              onTap: () => AuraStreakPopup.show(context, streakCount),
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
@@ -141,7 +116,7 @@ class _MapPageState extends State<MapPage> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '$auraPoints pts',
+                  '$streakCount day streak',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
@@ -198,13 +173,12 @@ class _MapPageState extends State<MapPage> {
       try {
         final lat = double.parse(row[3].toString());
         final lon = double.parse(row[4].toString());
-        final String markerId = '${row[3]}_${row[4]}';
-        final String name = row[1];
-        final String address = row[1];
-        final String hours = row[2];
+        final markerId = '${row[3]}_${row[4]}';
+        final name = row[1];
+        final address = row[1];
+        final hours = row[2];
         final position = LatLng(lat, lon);
 
-        // 🔎 Check Firestore for seating data before assigning marker
         final snapshot = await FirebaseFirestore.instance
             .collection('cafes')
             .doc(markerId)
@@ -212,17 +186,12 @@ class _MapPageState extends State<MapPage> {
             .get();
 
         final docs = snapshot.docs;
-        BitmapDescriptor markerIcon = greyMarker; // default
+        BitmapDescriptor markerIcon = greyMarker;
 
         if (docs.isNotEmpty) {
           final yesCount = docs.where((doc) => doc['seatingOffered'] == 'Yes').length;
           final noCount = docs.length - yesCount;
-
-          if (yesCount >= noCount) {
-            markerIcon = greenMarker;
-          } else {
-            markerIcon = redMarker;
-          }
+          markerIcon = yesCount >= noCount ? greenMarker : redMarker;
         }
 
         final marker = Marker(
@@ -243,10 +212,8 @@ class _MapPageState extends State<MapPage> {
     adjustCameraToMarkers();
   }
 
-
   Future<void> adjustCameraToMarkers() async {
     if (_markers.isEmpty) return;
-
     final controller = await _mapController.future;
     final bounds = _createBounds(_markers);
     controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, 100));
@@ -289,39 +256,12 @@ class _MapPageState extends State<MapPage> {
       final noise = review['noiseLevel'] ?? '';
       final seating = review['seatingType'] ?? '';
       final vibe = review['vibes'] ?? '';
-
-      final timestamp = review['timestamp'] != null
-          ? (review['timestamp'] as Timestamp).toDate()
-          : null;
-
+      final timestamp = review['timestamp'] != null ? (review['timestamp'] as Timestamp).toDate() : null;
       final formattedTime = timestamp != null
           ? DateFormat('MM/dd/yyyy hh:mm a').format(timestamp)
           : 'Unknown date';
-
       return "$formattedTime - $availability | $noise | $seating | $vibe";
     }).toList();
-
-    final hasSeatingList = reviews.map((r) => r['seatingOffered'] ?? '').toList();
-    final hasSeating = hasSeatingList.where((v) => v == 'Yes').length >= (hasSeatingList.length / 2);
-
-    final amenityList = <String>[];
-    for (var review in reviews) {
-      if (review['amenities'] != null) {
-        amenityList.addAll((review['amenities'] as String).split(', '));
-      }
-    }
-
-    final Map<String, int> amenityCounts = {};
-    for (var amenity in amenityList) {
-      amenityCounts[amenity] = (amenityCounts[amenity] ?? 0) + 1;
-    }
-    final sortedAmenities = amenityCounts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final commonAmenities = sortedAmenities
-        .map((e) => e.key)
-        .where((a) => a.trim().isNotEmpty)
-        .take(3)
-        .toList();
 
     showModalBottomSheet(
       context: context,
@@ -339,46 +279,13 @@ class _MapPageState extends State<MapPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(name, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () => _launchMapsSearch(address),
-                  child: Text(
-                    'Get Directions on Google Maps',
-                    style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
-                  ),
+                  child: Text('Get Directions on Google Maps', style: TextStyle(color: Colors.blue)),
                 ),
-                const SizedBox(height: 8),
-                Text(hours, style: TextStyle(fontStyle: FontStyle.italic)),
                 const Divider(height: 20),
-                if (reviews.isEmpty) ...[
-                  Text("There have been no check-ins at this location lately! Be the first to contribute for 75 Aura Points instead of 50 :)")
-                ] else ...[
-                  Text("Based on recent trends, this location:", style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Text(hasSeating ? "- Offers seating" : "- Does not appear to offer seating"),
-                  if (hasSeating && commonAmenities.isNotEmpty)
-                    Text("- Amenities: ${commonAmenities.join(', ')}"),
-                  const Divider(height: 20),
-                  Text(
-                    hasSeating
-                        ? "Here is the vibes that people are reporting:"
-                        : "Because there is no seating available at this location, there are no vibes available! But update the community below if you feel that this information is incorrect.",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 6),
-                  if (hasSeating)
-                    (recentCheckins.isNotEmpty
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: recentCheckins
-                                .map((vibe) => Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 2),
-                                      child: Text("• $vibe"),
-                                    ))
-                                .toList(),
-                          )
-                        : Text("No check-ins yet.")),
-                ],
+                ...recentCheckins.map((entry) => Text("• $entry")),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
