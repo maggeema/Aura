@@ -13,6 +13,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
+  bool _passwordVisible = false;
+  bool _confirmPasswordVisible = false;
   DateTime? _birthday;
 
   @override
@@ -42,14 +44,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         Container(
                           width: 120,
                           height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
+                          decoration: BoxDecoration(shape: BoxShape.circle),
                           child: ClipOval(
-                            child: Image.asset(
-                              'assets/logo.png',
-                              fit: BoxFit.cover,
-                            ),
+                            child: Image.asset('assets/logo.png', fit: BoxFit.cover),
                           ),
                         ),
                         SizedBox(height: 20),
@@ -66,10 +63,20 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         _buildTextField(_emailController, darkGrey),
                         SizedBox(height: 20),
                         _buildLabel('password', darkGrey),
-                        _buildTextField(_passwordController, darkGrey, obscure: true),
+                        _buildTextField(_passwordController, darkGrey,
+                            obscure: !_passwordVisible,
+                            toggleVisibility: () => setState(() {
+                                  _passwordVisible = !_passwordVisible;
+                                }),
+                            isObscured: !_passwordVisible),
                         SizedBox(height: 20),
                         _buildLabel('confirm password', darkGrey),
-                        _buildTextField(_confirmPasswordController, darkGrey, obscure: true),
+                        _buildTextField(_confirmPasswordController, darkGrey,
+                            obscure: !_confirmPasswordVisible,
+                            toggleVisibility: () => setState(() {
+                                  _confirmPasswordVisible = !_confirmPasswordVisible;
+                                }),
+                            isObscured: !_confirmPasswordVisible),
                         SizedBox(height: 20),
                         _buildLabel('birthday', darkGrey),
                         Container(
@@ -128,7 +135,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, Color color, {bool obscure = false}) {
+  Widget _buildTextField(TextEditingController controller, Color color,
+      {bool obscure = false, bool isObscured = false, VoidCallback? toggleVisibility}) {
     return Container(
       height: 50,
       decoration: BoxDecoration(
@@ -142,6 +150,15 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
         decoration: InputDecoration(
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(horizontal: 16),
+          suffixIcon: toggleVisibility != null
+              ? IconButton(
+                  icon: Icon(
+                    isObscured ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.grey,
+                  ),
+                  onPressed: toggleVisibility,
+                )
+              : null,
         ),
       ),
     );
@@ -174,14 +191,11 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .set({
-            'email': email,
-            'birthday': _birthday!.toIso8601String(),
-            'createdAt': Timestamp.now(),
-          });
+      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+        'email': email,
+        'birthday': _birthday!.toIso8601String(),
+        'createdAt': Timestamp.now(),
+      });
 
       Navigator.pushReplacementNamed(context, '/map');
     } on FirebaseAuthException catch (e) {
