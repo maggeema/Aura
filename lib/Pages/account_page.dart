@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'profile_page.dart';
+import 'past_checkins.dart';
+import 'settings_page.dart';
 
 class AccountPage extends StatefulWidget {
   @override
@@ -8,163 +10,118 @@ class AccountPage extends StatefulWidget {
 }
 
 class _AccountPageState extends State<AccountPage> {
-  String email = '';
-  String memberDuration = '';
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    loadUserData();
-  }
-
-  Future<void> loadUserData() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      final userData = doc.data();
-      if (userData != null) {
-        final emailFromDb = userData['email'] as String?;
-        final createdAtTimestamp = userData['createdAt'] as Timestamp?;
-
-        if (emailFromDb != null && createdAtTimestamp != null) {
-          final createdAt = createdAtTimestamp.toDate();
-          final now = DateTime.now();
-          final difference = now.difference(createdAt);
-
-          setState(() {
-            email = emailFromDb;
-            memberDuration = formatDuration(difference);
-            isLoading = false;
-          });
-        } else {
-          setState(() {
-            isLoading = false; // Even if fields are missing, stop loading spinner
-          });
-        }
-      } else {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    } else {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  String formatDuration(Duration diff) {
-    if (diff.inDays >= 365) {
-      final years = diff.inDays ~/ 365;
-      return "$years year${years > 1 ? 's' : ''} ago";
-    } else if (diff.inDays >= 30) {
-      final months = diff.inDays ~/ 30;
-      return "$months month${months > 1 ? 's' : ''} ago";
-    } else if (diff.inDays >= 1) {
-      return "${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago";
-    } else {
-      return "Joined today!";
-    }
-  }
-
-  void _changePassword() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.email != null) {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: user.email!);
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: Text('Password Reset'),
-          content: Text('A password reset link has been sent to your email.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text('OK')),
-          ],
-        ),
-      );
-    }
-  }
-
-  void _logout() async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final darkGrey = Color(0xFF333333);
-
     return Scaffold(
-      appBar: AppBar(title: Text('My Account')),
+      appBar: AppBar(
+        title: Text('My Account'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pushReplacementNamed(context, '/map'),
+        ),
+      ),
+      extendBodyBehindAppBar: true,
       body: Container(
         decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/background.jpg"),
-            fit: BoxFit.cover,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF5D0FE), Color(0xFF93C5FD)],
           ),
         ),
-        child: Center(
-          child: isLoading
-              ? CircularProgressIndicator() // show spinner while loading
-              : Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Email:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkGrey)),
-                      SizedBox(height: 4),
-                      Text(email.isNotEmpty ? email : 'Unavailable', style: TextStyle(fontSize: 16, color: darkGrey)),
-                      SizedBox(height: 20),
-                      Text('Member Since:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkGrey)),
-                      SizedBox(height: 4),
-                      Text(memberDuration.isNotEmpty ? memberDuration : 'Unavailable', style: TextStyle(fontSize: 16, color: darkGrey)),
-                      SizedBox(height: 40),
-                      _buildActionButtons(darkGrey),
-                    ],
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              children: [
+                SizedBox(height: 80), // Add top space since avatar is gone
+
+                // My Profile Button
+                _buildNavButton(
+                  context: context,
+                  icon: Icons.person,
+                  label: "My Profile",
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ProfilePage()),
                   ),
                 ),
+                SizedBox(height: 16),
+
+                // Previous Check-Ins Button
+                _buildNavButton(
+                  context: context,
+                  icon: Icons.history,
+                  label: "Previous Check-In's",
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CheckInsPage()),
+                  ),
+                ),
+                SizedBox(height: 16),
+
+                // Settings Button
+                _buildNavButton(
+                  context: context,
+                  icon: Icons.settings,
+                  label: "Settings",
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SettingsPage()),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildActionButtons(Color darkGrey) {
-    return Column(
-      children: [
-        Center(
-          child: ElevatedButton(
-            onPressed: _changePassword,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey.withOpacity(0.6),
-              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+  Widget _buildNavButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.white,
+                  radius: 16,
+                  child: Icon(icon, color: Colors.grey[700], size: 20),
+                ),
+                SizedBox(width: 16),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                Spacer(),
+                Icon(Icons.chevron_right, color: Colors.grey[700]),
+              ],
             ),
-            child: Text('Change Password', style: TextStyle(fontSize: 16, color: darkGrey)),
           ),
         ),
-        SizedBox(height: 20),
-        Center(
-          child: ElevatedButton(
-            onPressed: () => Navigator.pushNamed(context, '/checkins'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey.withOpacity(0.6),
-              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-            ),
-            child: Text('View My Check-Ins', style: TextStyle(fontSize: 16, color: darkGrey)),
-          ),
-        ),
-        SizedBox(height: 20),
-        Center(
-          child: ElevatedButton(
-            onPressed: _logout,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent.withOpacity(0.7),
-              padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-            ),
-            child: Text('Logout', style: TextStyle(fontSize: 16, color: Colors.white)),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
