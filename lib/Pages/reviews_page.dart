@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ReviewsPage extends StatefulWidget {
   final String cafeId;
@@ -104,26 +105,66 @@ class _ReviewsPageState extends State<ReviewsPage> {
     );
   }
 
-  void _submitReview() async {
-    final data = {
-      'seatingOffered': selectedSeatingOffered.join(', '),
-      'availability': selectedAvailability.join(', '),
-      'noiseLevel': selectedNoiseLevel.join(', '),
-      'amenities': selectedAmenities.join(', '),
-      'seatingType': selectedSeatingType.join(', '),
-      'vibes': selectedVibes.join(', '),
-      'timestamp': FieldValue.serverTimestamp(),
-    };
+void _submitReview() async {
+  final user = FirebaseAuth.instance.currentUser;
+  final now = Timestamp.now();
 
+  final summaryParts = <String>[];
+  if (selectedAvailability.isNotEmpty) summaryParts.add(selectedAvailability.join(', '));
+  if (selectedNoiseLevel.isNotEmpty) summaryParts.add(selectedNoiseLevel.join(', '));
+  if (selectedAmenities.isNotEmpty) summaryParts.add(selectedAmenities.join(', '));
+  if (selectedSeatingType.isNotEmpty) summaryParts.add(selectedSeatingType.join(', '));
+  if (selectedVibes.isNotEmpty) summaryParts.add('Vibes: ${selectedVibes.join(', ')}');
+  final summary = summaryParts.isNotEmpty ? summaryParts.join(' | ') : 'No details';
+
+  final reviewData = {
+    'seatingOffered': selectedSeatingOffered.join(', '),
+    'availability': selectedAvailability.join(', '),
+    'noiseLevel': selectedNoiseLevel.join(', '),
+    'amenities': selectedAmenities.join(', '),
+    'seatingType': selectedSeatingType.join(', '),
+    'vibes': selectedVibes.join(', '),
+    'review': summary,
+    'timestamp': now,
+  };
+
+  try {
+    // Write to the cafe reviews collection
     await FirebaseFirestore.instance
         .collection('cafes')
         .doc(widget.cafeId)
         .collection('reviews')
-        .add(data);
+        .add(reviewData);
+
+    // Also write to the user's check-in history
+    if (user != null) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('checkins')
+          .add({
+        'cafeId': widget.cafeId,
+        'cafeName': widget.cafeName,
+        'address': widget.address,
+        'review': summary,
+        'timestamp': now,
+      });
+      print("✅ Check-in saved to user history.");
+    } else {
+      print("❌ No logged-in user found.");
+    }
 
     if (!mounted) return;
-    Navigator.pop(context); // ✅ Return to map
+    Navigator.pushNamedAndRemoveUntil(context, '/map', (route) => false); // ✅ Go to map
+  } catch (e) {
+    print("❌ Failed to submit review: $e");
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error submitting check-in. Please try again.")),
+      );
+    }
   }
+}
 
   void Function(String) _handleSingleSelect(Set<String> targetSet) => (value) {
         setState(() {
