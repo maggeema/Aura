@@ -122,6 +122,31 @@ class _MapPageState extends State<MapPage> {
               ),
             ),
           ),
+          Positioned(
+            bottom: 20,
+            left: 20,
+            child: Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(color: Colors.black26, blurRadius: 4),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLegendRow('assets/green.png', 'Seating Available'),
+                  SizedBox(height: 6),
+                  _buildLegendRow('assets/red.png', 'Grab-and-Go Only'),
+                  SizedBox(height: 6),
+                  _buildLegendRow('assets/grey.png', 'No Check-Ins Yet'),
+                ],
+              ),
+            ),
+          ),
+
         ],
       ),
     );
@@ -284,8 +309,41 @@ class _MapPageState extends State<MapPage> {
                   onTap: () => _launchMapsSearch(address),
                   child: Text('Get Directions on Google Maps', style: TextStyle(color: Colors.blue)),
                 ),
+                SizedBox(height: 8),
+                Text(
+                  hours,
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
                 const Divider(height: 20),
-                ...recentCheckins.map((entry) => Text("• $entry")),
+                  ...snapshot.docs.map((doc) {
+                    final review = doc.data();
+                    final avatar = review['avatar'] ?? 'assets/coffee_logo.png';
+                    final availability = review['availability'] ?? '';
+                    final noise = review['noiseLevel'] ?? '';
+                    final seating = review['seatingType'] ?? '';
+                    final vibe = review['vibes'] ?? '';
+                    final timestamp = review['timestamp'] != null ? (review['timestamp'] as Timestamp).toDate() : null;
+                    final formattedTime = timestamp != null
+                        ? DateFormat('MM/dd/yyyy hh:mm a').format(timestamp)
+                        : 'Unknown date';
+                    final summary = "$formattedTime - $availability | $noise | $seating | $vibe";
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            backgroundImage: AssetImage(avatar),
+                            radius: 18,
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(child: Text(summary)),
+                        ],
+                      ),
+                    );
+                  }),
+
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
@@ -317,4 +375,15 @@ class _MapPageState extends State<MapPage> {
       print("❌ Could not launch Google Maps");
     }
   }
+
+  Widget _buildLegendRow(String assetPath, String label) {
+    return Row(
+      children: [
+        Image.asset(assetPath, width: 20, height: 20),
+        SizedBox(width: 8),
+        Text(label, style: TextStyle(fontSize: 14)),
+      ],
+    );
+  }
+
 }
