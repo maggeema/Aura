@@ -36,7 +36,7 @@ class AuraStreakPopup {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Your Aura Streak'),
+        title: Text('Your Aura Streak', style: TextStyle(color: Color(0xFF333333))),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,15 +49,17 @@ class AuraStreakPopup {
                       radius: 40,
                     ),
                     SizedBox(height: 12),
-                    Text('Current Streak: $streak days',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      'Current Streak: $streak day(s)',
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF333333)),
+                    ),
                     SizedBox(height: 20),
                   ],
                 ),
               ),
               Text(
                 'What does your streak mean?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF333333)),
               ),
               SizedBox(height: 12),
               ...List.generate(4, (index) {
@@ -77,10 +79,13 @@ class AuraStreakPopup {
                           children: [
                             Text(
                               "${stageLabels[index]} (${streakRequirements[index]})",
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF333333)),
                             ),
                             SizedBox(height: 4),
-                            Text(descriptions[index]),
+                            Text(
+                              descriptions[index],
+                              style: TextStyle(color: Color(0xFF333333)),
+                            ),
                           ],
                         ),
                       ),
@@ -94,7 +99,7 @@ class AuraStreakPopup {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
+            child: Text('Close', style: TextStyle(color: Colors.deepPurple)),
           )
         ],
       ),
