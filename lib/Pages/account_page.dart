@@ -14,11 +14,14 @@ class _AccountPageState extends State<AccountPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('My Account'),
+        title: Text(
+          'My Account',
+          style: TextStyle(color: Color(0xFF333333), fontWeight: FontWeight.w500),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: Color(0xFF333333)),
           onPressed: () => Navigator.pushReplacementNamed(context, '/map'),
         ),
       ),
@@ -36,9 +39,8 @@ class _AccountPageState extends State<AccountPage> {
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Column(
               children: [
-                SizedBox(height: 80), // Add top space since avatar is gone
+                SizedBox(height: 80),
 
-                // My Profile Button
                 _buildNavButton(
                   context: context,
                   icon: Icons.person,
@@ -50,7 +52,6 @@ class _AccountPageState extends State<AccountPage> {
                 ),
                 SizedBox(height: 16),
 
-                // Previous Check-Ins Button
                 _buildNavButton(
                   context: context,
                   icon: Icons.history,
@@ -62,7 +63,6 @@ class _AccountPageState extends State<AccountPage> {
                 ),
                 SizedBox(height: 16),
 
-                // Settings Button
                 _buildNavButton(
                   context: context,
                   icon: Icons.settings,
@@ -104,7 +104,7 @@ class _AccountPageState extends State<AccountPage> {
                 CircleAvatar(
                   backgroundColor: Colors.white,
                   radius: 16,
-                  child: Icon(icon, color: Colors.grey[700], size: 20),
+                  child: Icon(icon, color: Colors.deepPurple, size: 20),
                 ),
                 SizedBox(width: 16),
                 Text(
@@ -112,11 +112,11 @@ class _AccountPageState extends State<AccountPage> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[800],
+                    color: Colors.deepPurple,
                   ),
                 ),
                 Spacer(),
-                Icon(Icons.chevron_right, color: Colors.grey[700]),
+                Icon(Icons.chevron_right, color: Colors.deepPurple),
               ],
             ),
           ),
