@@ -6,22 +6,39 @@ class CheckInsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final darkGrey = Color(0xFF333333);
-
-    // Get signed-in user
     final user = FirebaseAuth.instance.currentUser;
+
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: Text('My Check-Ins')),
-        body: Center(
-          child: Text(
-            'Please log in to see your check-ins.',
+        appBar: AppBar(
+          title: Text(
+            'My Check-Ins',
             style: TextStyle(color: darkGrey),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        extendBodyBehindAppBar: true,
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFFF5D0FE), Color(0xFF93C5FD)],
+            ),
+          ),
+          child: SafeArea(
+            child: Center(
+              child: Text(
+                'Please log in to see your check-ins.',
+                style: TextStyle(color: darkGrey, fontSize: 16),
+              ),
+            ),
           ),
         ),
       );
     }
 
-    // Firestore reference for this user's check-ins
     final checkinsRef = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -29,78 +46,89 @@ class CheckInsPage extends StatelessWidget {
         .orderBy('timestamp', descending: true);
 
     return Scaffold(
-      appBar: AppBar(title: Text('My Check-Ins')),
+      appBar: AppBar(
+        title: Text(
+          'My Check-Ins',
+          style: TextStyle(color: darkGrey, fontWeight: FontWeight.w500),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Color(0xFF333333)),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      extendBodyBehindAppBar: true,
       body: Container(
         decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/background.jpg"),
-            fit: BoxFit.cover,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF5D0FE), Color(0xFF93C5FD)],
           ),
         ),
-        child: StreamBuilder<QuerySnapshot>(
-          stream: checkinsRef.snapshots(), // real-time updates
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
+        child: SafeArea(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: checkinsRef.snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
 
-            final docs = snapshot.data?.docs ?? [];
-            if (docs.isEmpty) {
-              return Center(
-                child: Text(
-                  'No check-ins yet.',
-                  style: TextStyle(color: darkGrey),
-                ),
-              );
-            }
-
-            return ListView.builder(
-              itemCount: docs.length,
-              itemBuilder: (context, index) {
-                final data = docs[index].data()! as Map<String, dynamic>;
-                final cafeName = data['cafeName'] as String? ?? 'Unknown Café';
-                final review = data['review'] as String? ?? '';
-                final date = (data['timestamp'] as Timestamp).toDate();
-
-                return ListTile(
-                  // Center cup icon alongside two text lines
-                  leading: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.local_cafe, color: darkGrey),
-                    ],
-                  ),
-
-                  // Line 1: Café name
-                  title: Text(
-                    cafeName,
-                    style: TextStyle(
-                      color: darkGrey,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-
-                  // Line 2: the user’s actual review in smaller font
-                  subtitle: Text(
-                    review,
-                    style: TextStyle(
-                      color: darkGrey,
-                      fontSize: 12,
-                    ),
-                  ),
-
-                  // Date on the right
-                  trailing: Text(
-                    '${date.month}/${date.day}/${date.year}',
-                    style: TextStyle(color: darkGrey, fontSize: 12),
+              final docs = snapshot.data?.docs ?? [];
+              if (docs.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No check-ins yet.',
+                    style: TextStyle(color: darkGrey, fontSize: 16),
                   ),
                 );
-              },
-            );
-          },
-        ), // StreamBuilder
-      ), // Container
-    ); // Scaffold
+              }
+
+              return ListView.builder(
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final data = docs[index].data()! as Map<String, dynamic>;
+                  final cafeName = data['cafeName'] as String? ?? 'Unknown Café';
+                  final review = data['review'] as String? ?? '';
+                  final date = (data['timestamp'] as Timestamp).toDate();
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: ListTile(
+                      leading: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.local_cafe, color: Color(0xFF333333)),
+                        ],
+                      ),
+                      title: Text(
+                        cafeName,
+                        style: TextStyle(
+                          color: darkGrey,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        review,
+                        style: TextStyle(
+                          color: darkGrey,
+                          fontSize: 13,
+                        ),
+                      ),
+                      trailing: Text(
+                        '${date.month}/${date.day}/${date.year}',
+                        style: TextStyle(color: darkGrey, fontSize: 13),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
   }
 }
