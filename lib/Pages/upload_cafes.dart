@@ -27,8 +27,8 @@ Future<void> uploadCafesFromCSV() async {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    print('✅ Uploaded: $name');
+    print('Uploaded: $name');
   }
 
-  print('🎉 All cafes uploaded to Firestore!');
+  print('All cafes uploaded to Firestore!');
 }
