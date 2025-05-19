@@ -17,11 +17,12 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   bool _confirmPasswordVisible = false;
   DateTime? _birthday;
 
+  final Color darkGrey = Color(0xFF333333);
+  final Color buttonColor = Colors.white;
+  final Color clickableColor = Colors.deepPurple;
+
   @override
   Widget build(BuildContext context) {
-    final buttonColor = Colors.grey.withOpacity(0.6);
-    final darkGrey = Color(0xFF333333);
-
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -37,7 +38,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Padding(
-                    padding: const EdgeInsets.all(24.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Column(
                       children: [
                         SizedBox(height: 40),
@@ -54,43 +55,43 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                           alignment: Alignment.centerLeft,
                           child: TextButton.icon(
                             onPressed: () => Navigator.pop(context),
-                            icon: Icon(Icons.arrow_back, color: darkGrey),
-                            label: Text('Back to Login', style: TextStyle(color: darkGrey)),
+                            icon: Icon(Icons.arrow_back, color: clickableColor),
+                            label: Text('Back to Login', style: TextStyle(color: clickableColor)),
                           ),
                         ),
                         SizedBox(height: 10),
-                        _buildLabel('email', darkGrey),
-                        _buildTextField(_emailController, darkGrey),
+                        _buildLabel('Email'),
+                        _buildTextField(_emailController),
                         SizedBox(height: 20),
-                        _buildLabel('password', darkGrey),
-                        _buildTextField(_passwordController, darkGrey,
-                            obscure: !_passwordVisible,
-                            toggleVisibility: () => setState(() {
-                                  _passwordVisible = !_passwordVisible;
-                                }),
-                            isObscured: !_passwordVisible),
+                        _buildLabel('Password'),
+                        _buildTextField(
+                          _passwordController,
+                          obscure: !_passwordVisible,
+                          toggleVisibility: () => setState(() => _passwordVisible = !_passwordVisible),
+                          isObscured: !_passwordVisible,
+                        ),
                         SizedBox(height: 20),
-                        _buildLabel('confirm password', darkGrey),
-                        _buildTextField(_confirmPasswordController, darkGrey,
-                            obscure: !_confirmPasswordVisible,
-                            toggleVisibility: () => setState(() {
-                                  _confirmPasswordVisible = !_confirmPasswordVisible;
-                                }),
-                            isObscured: !_confirmPasswordVisible),
+                        _buildLabel('Confirm Password'),
+                        _buildTextField(
+                          _confirmPasswordController,
+                          obscure: !_confirmPasswordVisible,
+                          toggleVisibility: () => setState(() => _confirmPasswordVisible = !_confirmPasswordVisible),
+                          isObscured: !_confirmPasswordVisible,
+                        ),
                         SizedBox(height: 20),
-                        _buildLabel('birthday', darkGrey),
+                        _buildLabel('Birthday'),
                         Container(
                           height: 50,
                           decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.2),
-                            borderRadius: BorderRadius.zero,
+                            color: Colors.grey.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: DateFormatField(
                             type: DateFormatType.type2,
                             decoration: InputDecoration(
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                              hintText: 'MM/DD/YYYY',
+                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              hintText: 'DD/MM/YYYY',
                               hintStyle: TextStyle(color: darkGrey),
                             ),
                             onComplete: (date) {
@@ -105,13 +106,12 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                           width: 160,
                           child: ElevatedButton(
                             onPressed: () => _signUp(context),
-                            child: Text('Sign Up', style: TextStyle(fontSize: 16, color: darkGrey)),
+                            child: Text('Sign Up', style: TextStyle(fontSize: 16, color: clickableColor)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: buttonColor,
                               padding: EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.zero,
-                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                              elevation: 3,
                             ),
                           ),
                         ),
@@ -128,28 +128,28 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     );
   }
 
-  Widget _buildLabel(String text, Color color) {
+  Widget _buildLabel(String text) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: Text(text, style: TextStyle(color: color, fontSize: 14)),
+      child: Text(text, style: TextStyle(color: darkGrey, fontSize: 14)),
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, Color color,
+  Widget _buildTextField(TextEditingController controller,
       {bool obscure = false, bool isObscured = false, VoidCallback? toggleVisibility}) {
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.2),
-        borderRadius: BorderRadius.zero,
+        color: Colors.grey.withOpacity(0.25),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
         controller: controller,
         obscureText: obscure,
-        style: TextStyle(color: color),
+        style: TextStyle(color: darkGrey),
         decoration: InputDecoration(
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           suffixIcon: toggleVisibility != null
               ? IconButton(
                   icon: Icon(
@@ -195,6 +195,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
         'email': email,
         'birthday': _birthday!.toIso8601String(),
         'createdAt': Timestamp.now(),
+        'streak': 0,
+        'lastCheckinDate': Timestamp.fromDate(DateTime.now()),
       });
 
       Navigator.pushReplacementNamed(context, '/map');
