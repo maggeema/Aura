@@ -9,14 +9,12 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
   bool _passwordVisible = false;
+
+  final Color darkGrey = Color(0xFF333333);
 
   @override
   Widget build(BuildContext context) {
-    final buttonColor = Colors.grey.withOpacity(0.6);
-    final darkGrey = Color(0xFF333333);
-
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -27,7 +25,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Column(
               children: [
                 SizedBox(height: 40),
@@ -41,34 +39,35 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 Spacer(),
                 _buildTextField(
-                  label: 'email',
+                  label: 'Email',
                   controller: _emailController,
                   obscureText: false,
                   showToggle: false,
-                  darkGrey: darkGrey,
                 ),
                 SizedBox(height: 20),
                 _buildTextField(
-                  label: 'password',
+                  label: 'Password',
                   controller: _passwordController,
                   obscureText: !_passwordVisible,
                   showToggle: true,
-                  darkGrey: darkGrey,
                 ),
                 SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () => _forgotPassword(context),
-                    child: Text('Forgot Password?', style: TextStyle(color: darkGrey)),
+                    child: Text(
+                      'Forgot Password?',
+                      style: TextStyle(color: Colors.deepPurple),
+                    ),
                   ),
                 ),
                 SizedBox(height: 20),
-                _buildButton('Login', () => _login(context), darkGrey, buttonColor),
+                _buildButton('Login', () => _login(context)),
                 SizedBox(height: 15),
                 _buildButton('Create Account', () {
                   Navigator.pushNamed(context, '/register');
-                }, darkGrey, buttonColor),
+                }),
                 Spacer(),
               ],
             ),
@@ -83,7 +82,6 @@ class _LoginPageState extends State<LoginPage> {
     required TextEditingController controller,
     required bool obscureText,
     required bool showToggle,
-    required Color darkGrey,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,8 +91,8 @@ class _LoginPageState extends State<LoginPage> {
         Container(
           height: 50,
           decoration: BoxDecoration(
-            color: Colors.grey.withOpacity(0.2),
-            borderRadius: BorderRadius.zero,
+            color: Colors.grey.withOpacity(0.25),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: TextField(
             controller: controller,
@@ -102,7 +100,7 @@ class _LoginPageState extends State<LoginPage> {
             style: TextStyle(color: darkGrey),
             decoration: InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16),
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               suffixIcon: showToggle
                   ? IconButton(
                       icon: Icon(
@@ -123,16 +121,17 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildButton(String label, VoidCallback onPressed, Color textColor, Color bgColor) {
-    return Container(
+  Widget _buildButton(String label, VoidCallback onPressed) {
+    return SizedBox(
       width: 160,
       child: ElevatedButton(
         onPressed: onPressed,
-        child: Text(label, style: TextStyle(fontSize: 16, color: textColor)),
+        child: Text(label, style: TextStyle(fontSize: 16, color: Colors.deepPurple)),
         style: ElevatedButton.styleFrom(
-          backgroundColor: bgColor,
+          backgroundColor: Colors.white,
           padding: EdgeInsets.symmetric(vertical: 15),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          elevation: 3,
         ),
       ),
     );
