@@ -1,3 +1,5 @@
+// map_page.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -25,6 +27,7 @@ class _MapPageState extends State<MapPage> {
   Set<Marker> _markers = {};
   Set<Circle> _circles = {};
   int streakCount = 0;
+  bool streakLoaded = false;
   late BitmapDescriptor redMarker;
   late BitmapDescriptor greenMarker;
   late BitmapDescriptor greyMarker;
@@ -65,6 +68,7 @@ class _MapPageState extends State<MapPage> {
       if (data != null && data.containsKey('streak')) {
         setState(() {
           streakCount = data['streak'] ?? 0;
+          streakLoaded = true;
         });
       }
     }
@@ -86,6 +90,39 @@ class _MapPageState extends State<MapPage> {
             markers: _markers,
             circles: _circles,
           ),
+          // Streak Button
+          Positioned(
+            top: 40,
+            right: 20,
+            child: GestureDetector(
+              onTap: () {
+                if (streakLoaded) {
+                  AuraStreakPopup.show(context, streakCount);
+                }
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.auto_awesome, color: Colors.deepPurple),
+                    SizedBox(width: 8),
+                    Text(
+                      streakLoaded ? '$streakCount day streak' : 'Loading...',
+                      style: TextStyle(fontWeight: FontWeight.w500, color: Colors.deepPurple),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+
+          // Account Button
           Positioned(
             top: 40,
             left: 20,
@@ -94,34 +131,26 @@ class _MapPageState extends State<MapPage> {
                 Navigator.pushNamed(context, '/account');
               },
               child: Container(
-                width: 40,
-                height: 40,
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Color(0xFFFFFACD),
-                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
                 ),
-                child: Icon(Icons.person, color: Colors.black, size: 22),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 40,
-            right: 20,
-            child: GestureDetector(
-              onTap: () => AuraStreakPopup.show(context, streakCount),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Color(0xFFFFFACD),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '$streakCount day streak',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                child: Row(
+                  children: [
+                    Icon(Icons.person, color: Colors.deepPurple),
+                    SizedBox(width: 8),
+                    Text(
+                      "Account",
+                      style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w500),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
+
           Positioned(
             bottom: 20,
             left: 20,
@@ -130,9 +159,7 @@ class _MapPageState extends State<MapPage> {
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(color: Colors.black26, blurRadius: 4),
-                ],
+                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,7 +173,6 @@ class _MapPageState extends State<MapPage> {
               ),
             ),
           ),
-
         ],
       ),
     );
@@ -216,7 +242,7 @@ class _MapPageState extends State<MapPage> {
         if (docs.isNotEmpty) {
           final yesCount = docs.where((doc) => doc['seatingOffered'] == 'Yes').length;
           final noCount = docs.length - yesCount;
-          markerIcon = yesCount >= noCount ? greenMarker : redMarker;
+          markerIcon = yesCount > noCount ? greenMarker : redMarker;
         }
 
         final marker = Marker(
@@ -271,35 +297,26 @@ class _MapPageState extends State<MapPage> {
         .doc(markerId)
         .collection('reviews')
         .orderBy('timestamp', descending: true)
-        .limit(5)
         .get();
 
-    final reviews = snapshot.docs.map((doc) => doc.data()).toList();
+    final reviews = snapshot.docs;
+    final totalReviews = reviews.length;
 
-    final recentCheckins = reviews.map((review) {
-      final availability = review['availability'] ?? '';
-      final noise = review['noiseLevel'] ?? '';
-      final seating = review['seatingType'] ?? '';
-      final vibe = review['vibes'] ?? '';
-      final timestamp = review['timestamp'] != null ? (review['timestamp'] as Timestamp).toDate() : null;
-      final formattedTime = timestamp != null
-          ? DateFormat('MM/dd/yyyy hh:mm a').format(timestamp)
-          : 'Unknown date';
-      return "$formattedTime - $availability | $noise | $seating | $vibe";
-    }).toList();
+    final hasNoCheckIns = totalReviews == 0;
+    final allNoSeating = reviews.isNotEmpty && reviews.every((doc) => doc['seatingOffered'] == 'No');
+
+    // Check for 3 most recent reviews with seating == Yes
+    final recentWithSeating = reviews.take(3).where((doc) => doc['seatingOffered'] == 'Yes').length;
+    final showReviews = recentWithSeating == 3;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (context) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.51,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) {
-          return SingleChildScrollView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(16),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -310,62 +327,137 @@ class _MapPageState extends State<MapPage> {
                   child: Text('Get Directions on Google Maps', style: TextStyle(color: Colors.blue)),
                 ),
                 SizedBox(height: 8),
-                Text(
-                  hours,
-                  style: TextStyle(fontStyle: FontStyle.italic),
-                ),
+                Text(hours, style: TextStyle(fontStyle: FontStyle.italic)),
                 const Divider(height: 20),
-                  ...snapshot.docs.map((doc) {
+
+                if (hasNoCheckIns)
+                  Text(
+                    "No one has checked in at this café yet.\nYou could be the trendstarter — add a check-in to attract the right crowd and set the tone for the vibe!",
+                    style: TextStyle(fontSize: 14, color: Color(0xFF333333)),
+                  )
+                else if (allNoSeating)
+                  Text(
+                    "Many have reported this is a grab-and-go spot with no seating.\nAdd a check-in to confirm this, or keep others in the loop if seating is now available!",
+                    style: TextStyle(fontSize: 14, color: Color(0xFF333333)),
+                  )
+                else if (showReviews) ...[
+                  // Extract amenities from the recent 3 reviews
+                  Builder(
+                    builder: (context) {
+                      final Set<String> amenitiesSet = {};
+                      final iconMap = {
+                        "WiFi Available": Icons.wifi,
+                        "Bathroom": Icons.wc,
+                        "Power Outlets": Icons.power,
+                      };
+
+                      for (var doc in reviews.take(3)) {
+                        final amenities = (doc['amenities'] as String?)?.split(', ') ?? [];
+                        amenitiesSet.addAll(amenities);
+                      }
+
+                      return amenitiesSet.isNotEmpty
+                          ? Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Wrap(
+                                spacing: 16,
+                                runSpacing: 8,
+                                alignment: WrapAlignment.start,
+                                children: amenitiesSet.map((a) {
+                                  final icon = iconMap[a];
+                                  return icon != null
+                                      ? Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(icon, size: 18, color: Colors.grey[800]),
+                                            SizedBox(width: 6),
+                                            Text(a, style: TextStyle(fontSize: 13, color: Color(0xFF333333))),
+                                          ],
+                                        )
+                                      : SizedBox.shrink();
+                                }).toList(),
+                              ),
+                            )
+                          : SizedBox.shrink();
+                    },
+                  ),
+
+                  ...reviews.take(5).map((doc) {
                     final review = doc.data();
                     final avatar = review['avatar'] ?? 'assets/coffee_logo.png';
                     final availability = review['availability'] ?? '';
                     final noise = review['noiseLevel'] ?? '';
                     final seating = review['seatingType'] ?? '';
                     final vibe = review['vibes'] ?? '';
-                    final timestamp = review['timestamp'] != null ? (review['timestamp'] as Timestamp).toDate() : null;
+                    final timestamp = review['timestamp'] != null
+                        ? (review['timestamp'] as Timestamp).toDate()
+                        : null;
                     final formattedTime = timestamp != null
                         ? DateFormat('MM/dd/yyyy hh:mm a').format(timestamp)
                         : 'Unknown date';
-                    final summary = "$formattedTime - $availability | $noise | $seating | $vibe";
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircleAvatar(
-                            backgroundImage: AssetImage(avatar),
-                            radius: 18,
-                          ),
+                          CircleAvatar(backgroundImage: AssetImage(avatar), radius: 18),
                           SizedBox(width: 10),
-                          Expanded(child: Text(summary)),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(formattedTime, style: TextStyle(fontSize: 13, color: Colors.grey[700])),
+                                SizedBox(height: 4),
+                                Text(
+                                  "$availability | $noise | $seating | $vibe",
+                                  style: TextStyle(fontSize: 13, color: Colors.black87),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     );
                   }),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Maintain your streak by checking in daily! Your check-ins help others find a space that matches their vib, whether it’s quiet for work or lively for conversation. Let’s make sure everyone feels like they belong.",
+                    style: TextStyle(fontSize: 14, color: Color(0xFF333333)),
+                  ),
+                ],
 
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/reviews',
-                      arguments: {
-                        'cafeId': markerId,
-                        'cafeName': name,
-                        'address': address,
-                      },
-                    );
-                  },
-                  child: Text("Add Check-In"),
+                const SizedBox(height: 20),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/reviews',
+                        arguments: {
+                          'cafeId': markerId,
+                          'cafeName': name,
+                          'address': address,
+                        },
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.deepPurple,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
+                    child: Text("Add Check-In", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
+
 
   void _launchMapsSearch(String address) async {
     final Uri mapsUrl = Uri.parse("https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}");
@@ -375,15 +467,23 @@ class _MapPageState extends State<MapPage> {
       print("❌ Could not launch Google Maps");
     }
   }
-
+    
   Widget _buildLegendRow(String assetPath, String label) {
     return Row(
       children: [
-        Image.asset(assetPath, width: 20, height: 20),
+        Image.asset(assetPath, width: 32, height: 32),
         SizedBox(width: 8),
-        Text(label, style: TextStyle(fontSize: 14)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF333333), // Dark grey for non-clickable
+          ),
+        ),
       ],
     );
   }
+
 
 }
