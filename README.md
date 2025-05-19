@@ -14,7 +14,7 @@ Aura is a capstone project that delivers live, crowd-sourced updates from users 
 - Designed all screens in Figma and ensured visual consistency.  
 - Worked with Daisy and Maggie to implement frontend designs accurately.  
 - Added test check-ins to simulate user activity and identify bugs.  
-[View all of Gael's Figma Designs](https://www.figma.com/design/6DUUuGhDWbLGhIlrt3bOif?fuid=1262812640838458674&prev-plan-id=1262812642949645873&prev-plan-type=team&prev-selected-view=recentsAndSharing)
+- [View all of Gael's Figma Designs](https://www.figma.com/design/6DUUuGhDWbLGhIlrt3bOif?fuid=1262812640838458674&prev-plan-id=1262812642949645873&prev-plan-type=team&prev-selected-view=recentsAndSharing)
 
 **Daisy – Frontend Developer**  
 - Built the Create Account page and Check-In interface from Figma mockups.  
@@ -29,10 +29,11 @@ Aura is a capstone project that delivers live, crowd-sourced updates from users 
 - Ensured check-ins were accurately displayed across the app and stored for each user.
 
 **Maggie – Technical Project Manager**  
-- Established the app architecture and integrated Google Maps API.  
-- Assigned tasks and tracked team progress throughout development.  
-- Led debugging efforts to ensure smooth app flow and data accuracy.  
-- Compiled updates and created weekly progress presentations.
+- Set up the foundation of the app and integrated the Google Maps API.  
+- Oversaw all code coordination and was responsible for pushing final commits to GitHub after validating that features worked together.  
+- Conducted one-on-one testing sessions with each teammate to catch bugs early and ensure frontend and backend components were fully integrated before merging.  
+- Helped resolve remote collaboration challenges by managing sync issues between contributors and verifying implementation against designs.  
+- Compiled weekly progress updates and created team presentations that summarized accomplishments across design, frontend, and backend work.
 
 **Watch our full user interface demo here**: [https://youtu.be/daS8D58eiLo](https://youtu.be/daS8D58eiLo)
 
