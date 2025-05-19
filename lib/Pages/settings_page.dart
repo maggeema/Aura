@@ -86,11 +86,14 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Settings'),
+        title: Text(
+          'Settings',
+          style: TextStyle(color: Color(0xFF333333), fontWeight: FontWeight.w500),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: Color(0xFF333333)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -116,7 +119,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey[800],
+                          color: Color(0xFF333333),
                         ),
                       ),
                       SizedBox(height: 16),
@@ -153,18 +156,16 @@ class _SettingsPageState extends State<SettingsPage> {
                               child: ElevatedButton(
                                 onPressed: _changePassword,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue[600],
-                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: Colors.deepPurple,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(30),
                                   ),
+                                  padding: EdgeInsets.symmetric(vertical: 15),
                                 ),
                                 child: Text(
                                   'Submit',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: TextStyle(fontSize: 16),
                                 ),
                               ),
                             ),
@@ -177,19 +178,16 @@ class _SettingsPageState extends State<SettingsPage> {
                         child: ElevatedButton(
                           onPressed: _logout,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                            padding: EdgeInsets.symmetric(vertical: 12),
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.deepPurple,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(30),
                             ),
+                            padding: EdgeInsets.symmetric(vertical: 15),
                           ),
                           child: Text(
                             'Sign Out',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                            style: TextStyle(fontSize: 16),
                           ),
                         ),
                       ),
@@ -213,30 +211,32 @@ class _SettingsPageState extends State<SettingsPage> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.grey[800],
+            color: Color(0xFF333333),
           ),
         ),
         SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          obscureText: !isVisible,
-          decoration: InputDecoration(
-            hintText: 'Enter password',
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            suffixIcon: IconButton(
-              icon: Icon(
-                isVisible ? Icons.visibility_off : Icons.visibility,
-                color: Colors.grey,
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.withOpacity(0.25),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: !isVisible,
+            decoration: InputDecoration(
+              hintText: 'Enter password',
+              hintStyle: TextStyle(color: Colors.grey[600]),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  isVisible ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey,
+                ),
+                onPressed: toggleVisibility,
               ),
-              onPressed: toggleVisibility,
             ),
           ),
         ),
