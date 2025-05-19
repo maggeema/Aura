@@ -8,208 +8,191 @@ class ReviewsPage extends StatefulWidget {
   final String address;
 
   ReviewsPage({
-    Key? key,
     required this.cafeId,
     required this.cafeName,
     required this.address,
-  }) : super(key: key);
+  });
 
   @override
   _ReviewsPageState createState() => _ReviewsPageState();
 }
 
 class _ReviewsPageState extends State<ReviewsPage> {
-  Set<String> selectedSeatingOffered = {};
-  Set<String> selectedAvailability = {};
-  Set<String> selectedNoiseLevel = {};
+  int currentPage = 0;
+
+  String? selectedSeating;
+  String? selectedAvailability;
+  String? selectedNoise;
   Set<String> selectedAmenities = {};
-  Set<String> selectedSeatingType = {};
+  String? selectedSeatingType;
   Set<String> selectedVibes = {};
+
+  final Map<String, IconData> allIcons = {
+    "Yes": Icons.check,
+    "No": Icons.clear,
+    "Many spots available": Icons.event_available,
+    "Limited Spots": Icons.event_busy,
+    "No spots available": Icons.block,
+    "Quiet": Icons.volume_mute,
+    "Chatty": Icons.record_voice_over,
+    "Loud": Icons.volume_up,
+    "WiFi Available": Icons.wifi,
+    "Bathroom": Icons.wc,
+    "Power Outlets": Icons.power,
+    "Isolated Seating": Icons.person,
+    "Communal Seating": Icons.group,
+    "Both are offered here": Icons.category,
+    "Minimalist": Icons.crop_square,
+    "Cozy": Icons.chair,
+    "Ambient": Icons.nightlight,
+    "Playful": Icons.sentiment_satisfied,
+    "Aromatic": Icons.local_florist,
+    "Sociable": Icons.groups,
+    "Retro": Icons.radio,
+    "Trendy": Icons.whatshot,
+    "Bright": Icons.wb_sunny,
+    "Dim": Icons.lightbulb_outline,
+    "Upbeat": Icons.music_note,
+    "Spacious": Icons.open_in_full,
+    "Crowded": Icons.people,
+    "Energic": Icons.bolt,
+    "Snug": Icons.bed,
+    "Lively": Icons.surround_sound,
+    "Work Friendly": Icons.work,
+    "No Laptop Zone": Icons.do_not_disturb_alt,
+    "Deep Focus": Icons.center_focus_strong,
+  };
+
+  final List<String> vibesOptions = [
+    "Minimalist", "Cozy", "Ambient", "Playful", "Aromatic",
+    "Sociable", "Retro", "Trendy", "Bright", "Dim",
+    "Upbeat", "Spacious", "Crowded", "Energic", "Snug", "Lively",
+    "Work Friendly", "No Laptop Zone", "Deep Focus"
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final bool seatingIsYes = selectedSeatingOffered.contains('Yes');
+    final pages = [
+      _buildSingleSelectPage("Is there seating offered?", ["Yes", "No"], selectedSeating, (val) {
+        setState(() {
+          selectedSeating = val;
+          if (val == "No") currentPage = 1;
+        });
+      }),
+      if (selectedSeating == "No") _buildNoSeatingConfirmationPage(),
+      if (selectedSeating == "Yes") ...[
+        _buildSingleSelectPage("Current availability?", ["Many spots available", "Limited Spots", "No spots available"], selectedAvailability, (val) {
+          setState(() => selectedAvailability = val);
+        }),
+        _buildSingleSelectPage("Noise level?", ["Quiet", "Chatty", "Loud"], selectedNoise, (val) {
+          setState(() => selectedNoise = val);
+        }),
+        _buildMultiSelectPage("Amenities available", ["WiFi Available", "Bathroom", "Power Outlets"], selectedAmenities),
+        _buildSingleSelectPage("Seating type?", ["Isolated Seating", "Communal Seating", "Both are offered here"], selectedSeatingType, (val) {
+          setState(() => selectedSeatingType = val);
+        }),
+        _buildVibesPage(),
+      ]
+    ];
 
-    return Scaffold(
-      appBar: AppBar(title: Text('Add Check-In')),
-      body: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/background.jpg"),
-            fit: BoxFit.cover,
+    return WillPopScope(
+      onWillPop: _onExitPrompt,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: _confirmExitToMap,
           ),
+          title: Text('Check-In'),
         ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Center(
+        extendBodyBehindAppBar: true,
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFF5D0FE), Color(0xFF93C5FD)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(24.0),
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: 600),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          _buildSection('Seating offered?', ['Yes', 'No'], selectedSeatingOffered, (value) {
-                            setState(() {
-                              selectedSeatingOffered.clear();
-                              selectedSeatingOffered.add(value);
-                            });
-                          }),
-
-                          if (seatingIsYes) ...[
-                            _buildSection('Current Availability?', [
-                              'Many spots available',
-                              'Limited Spots',
-                              'No spots available'
-                            ], selectedAvailability, _handleSingleSelect(selectedAvailability)),
-
-                            _buildSection('Noise Level', [
-                              'Quiet', 'Chatty', 'Loud'
-                            ], selectedNoiseLevel, _handleSingleSelect(selectedNoiseLevel)),
-
-                            _buildSection('Amenities', [
-                              'WiFi Available', 'Bathroom', 'Power Outlets'
-                            ], selectedAmenities, _handleMultiSelect(selectedAmenities)),
-
-                            _buildSection('Seating', [
-                              'Isolated Seating', 'Communal Seating'
-                            ], selectedSeatingType, _handleSingleSelect(selectedSeatingType)),
-
-                            _buildSection('Vibes', [
-                              'Work Friendly', 'Social Atmosphere', 'Deep Focus'
-                            ], selectedVibes, _handleMultiSelect(selectedVibes)),
-                          ],
-
-                          SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: _submitReview,
-                            style: ElevatedButton.styleFrom(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: EdgeInsets.symmetric(vertical: 15, horizontal: 50),
-                            ),
-                            child: Text('Publish'),
-                          ),
-                        ],
-                      ),
+                      child: pages[currentPage],
                     ),
                   ),
                 ),
-              ),
-            );
-          },
+                Positioned(
+                  left: 20,
+                  bottom: 20,
+                  child: currentPage > 0
+                      ? ElevatedButton(
+                          onPressed: () => setState(() => currentPage--),
+                          style: _navButtonStyle(),
+                          child: Text("Back"),
+                        )
+                      : SizedBox.shrink(),
+                ),
+                Positioned(
+                  right: 20,
+                  bottom: 20,
+                  child: _isLastPage()
+                      ? ElevatedButton(
+                          onPressed: _canProceed() ? _submitReview : null,
+                          style: _navButtonStyle(),
+                          child: Text("Publish"),
+                        )
+                      : ElevatedButton(
+                          onPressed: _canProceed() ? () => setState(() => currentPage++) : null,
+                          style: _navButtonStyle(),
+                          child: Text("Next"),
+                        ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-void _submitReview() async {
-  final user = FirebaseAuth.instance.currentUser;
-  final now = Timestamp.now();
-
-  final summaryParts = <String>[];
-  if (selectedAvailability.isNotEmpty) summaryParts.add(selectedAvailability.join(', '));
-  if (selectedNoiseLevel.isNotEmpty) summaryParts.add(selectedNoiseLevel.join(', '));
-  if (selectedAmenities.isNotEmpty) summaryParts.add(selectedAmenities.join(', '));
-  if (selectedSeatingType.isNotEmpty) summaryParts.add(selectedSeatingType.join(', '));
-  if (selectedVibes.isNotEmpty) summaryParts.add('Vibes: ${selectedVibes.join(', ')}');
-  final summary = summaryParts.isNotEmpty ? summaryParts.join(' | ') : 'No details';
-
-  final reviewData = {
-    'seatingOffered': selectedSeatingOffered.join(', '),
-    'availability': selectedAvailability.join(', '),
-    'noiseLevel': selectedNoiseLevel.join(', '),
-    'amenities': selectedAmenities.join(', '),
-    'seatingType': selectedSeatingType.join(', '),
-    'vibes': selectedVibes.join(', '),
-    'review': summary,
-    'timestamp': now,
-  };
-
-  try {
-    // Write to the cafe reviews collection
-    await FirebaseFirestore.instance
-        .collection('cafes')
-        .doc(widget.cafeId)
-        .collection('reviews')
-        .add(reviewData);
-
-    // Also write to the user's check-in history
-    if (user != null) {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('checkins')
-          .add({
-        'cafeId': widget.cafeId,
-        'cafeName': widget.cafeName,
-        'address': widget.address,
-        'review': summary,
-        'timestamp': now,
-      });
-      print("✅ Check-in saved to user history.");
-    } else {
-      print("❌ No logged-in user found.");
-    }
-
-    if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, '/map', (route) => false); // ✅ Go to map
-  } catch (e) {
-    print("❌ Failed to submit review: $e");
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error submitting check-in. Please try again.")),
-      );
-    }
-  }
-}
-
-  void Function(String) _handleSingleSelect(Set<String> targetSet) => (value) {
-        setState(() {
-          targetSet.clear();
-          targetSet.add(value);
-        });
-      };
-
-  void Function(String) _handleMultiSelect(Set<String> targetSet) => (value) {
-        setState(() {
-          if (targetSet.contains(value)) {
-            targetSet.remove(value);
-          } else {
-            targetSet.add(value);
-          }
-        });
-      };
-
-  Widget _buildSection(String title, List<String> options, Set<String> selectedSet, void Function(String) onSelect) {
+  Widget _buildNoSeatingConfirmationPage() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(height: 20),
-        Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        SizedBox(height: 10),
+        Text("No seating? Let others know.", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+        SizedBox(height: 24),
+        Text("Press publish to confirm this check-in.", textAlign: TextAlign.center),
+      ],
+    );
+  }
+
+  Widget _buildSingleSelectPage(String title, List<String> options, String? selected, void Function(String) onSelect) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+        SizedBox(height: 24),
         Wrap(
-          spacing: 10,
-          runSpacing: 10,
+          spacing: 12,
+          runSpacing: 12,
           alignment: WrapAlignment.center,
           children: options.map((option) {
-            final bool isSelected = selectedSet.contains(option);
-            return ElevatedButton(
+            final isSelected = selected == option;
+            return ElevatedButton.icon(
+              icon: Icon(allIcons[option]),
+              label: Text(option),
               onPressed: () => onSelect(option),
               style: ElevatedButton.styleFrom(
-                fixedSize: Size(160, 60),
-                backgroundColor: isSelected ? const Color.fromARGB(255, 194, 218, 243) : null,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              ),
-              child: Text(
-                option,
-                style: TextStyle(fontSize: 16, color: isSelected ? Colors.grey : null),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                backgroundColor: isSelected ? Colors.purple[100] : null,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
             );
           }).toList(),
@@ -217,4 +200,210 @@ void _submitReview() async {
       ],
     );
   }
+
+  Widget _buildMultiSelectPage(String title, List<String> options, Set<String> selected) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+        SizedBox(height: 24),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          alignment: WrapAlignment.center,
+          children: options.map((option) {
+            final isSelected = selected.contains(option);
+            return ElevatedButton.icon(
+              icon: Icon(allIcons[option]),
+              label: Text(option),
+              onPressed: () {
+                setState(() {
+                  isSelected ? selected.remove(option) : selected.add(option);
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isSelected ? Colors.purple[100] : null,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVibesPage() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text("Vibes", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+        SizedBox(height: 24),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          alignment: WrapAlignment.center,
+          children: vibesOptions.map((vibe) {
+            final isSelected = selectedVibes.contains(vibe);
+            return ElevatedButton.icon(
+              icon: Icon(allIcons[vibe]),
+              label: Text(vibe),
+              onPressed: () {
+                setState(() {
+                  isSelected ? selectedVibes.remove(vibe) : selectedVibes.add(vibe);
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isSelected ? Colors.purple[100] : null,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  ButtonStyle _navButtonStyle() {
+    return ElevatedButton.styleFrom(
+      backgroundColor: Colors.deepPurple[100],
+      foregroundColor: Colors.black,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+    );
+  }
+
+  bool _canProceed() {
+    if (selectedSeating == "No" && currentPage == 1) return true;
+    switch (currentPage) {
+      case 0:
+        return selectedSeating != null;
+      case 1:
+        return selectedAvailability != null;
+      case 2:
+        return selectedNoise != null;
+      case 3:
+        return true;
+      case 4:
+        return selectedSeatingType != null;
+      case 5:
+        return selectedVibes.isNotEmpty;
+      default:
+        return true;
+    }
+  }
+
+  bool _isLastPage() {
+    return (selectedSeating == "Yes" && currentPage == 5) ||
+           (selectedSeating == "No" && currentPage == 1);
+  }
+
+  Future<bool> _onExitPrompt() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Leave this page?"),
+        content: Text("You haven't published your check-in yet. Do you want to return to the home page?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text("Cancel")),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text("Yes, Leave")),
+        ],
+      ),
+    ) ?? false;
+  }
+
+  void _confirmExitToMap() async {
+    bool shouldLeave = await _onExitPrompt();
+    if (shouldLeave) {
+      Navigator.pushNamedAndRemoveUntil(context, '/map', (_) => false);
+    }
+  }
+
+  Future<void> _submitReview() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid;
+    if (uid == null) return;
+
+    final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
+    final userDoc = await userRef.get();
+    final data = userDoc.data();
+    final streak = data?['streak'] ?? 0;
+    final lastCheckIn = data?['lastCheckIn'];
+
+    // Determine today's date (calendar day only)
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    DateTime? lastDate;
+
+    if (lastCheckIn != null && lastCheckIn is Timestamp) {
+      final last = lastCheckIn.toDate();
+      lastDate = DateTime(last.year, last.month, last.day);
+    }
+
+    // If last check-in was before today, increment streak
+    int newStreak = streak;
+    if (lastDate == null || lastDate.isBefore(today)) {
+      newStreak = streak + 1;
+      await userRef.update({
+        'streak': newStreak,
+        'lastCheckIn': Timestamp.fromDate(today),
+      });
+    }
+
+    // Set avatar based on new streak
+    String avatarImage;
+    if (newStreak >= 30) {
+      avatarImage = "assets/owl.png";
+    } else if (newStreak >= 14) {
+      avatarImage = "assets/cat.png";
+    } else if (newStreak >= 7) {
+      avatarImage = "assets/turtle.png";
+    } else {
+      avatarImage = "assets/coffee_logo.png";
+    }
+
+    final timestamp = Timestamp.now();
+    final reviewSummary = [
+      selectedAvailability,
+      selectedNoise,
+      selectedAmenities.join(', '),
+      selectedSeatingType,
+      selectedVibes.isNotEmpty ? "Vibes: ${selectedVibes.join(', ')}" : null,
+    ].whereType<String>().join(" | ");
+
+    final reviewData = {
+      'seatingOffered': selectedSeating,
+      'availability': selectedAvailability,
+      'noiseLevel': selectedNoise,
+      'amenities': selectedAmenities.join(', '),
+      'seatingType': selectedSeatingType,
+      'vibes': selectedVibes.join(', '),
+      'review': reviewSummary,
+      'timestamp': timestamp,
+      'avatar': avatarImage,
+    };
+
+
+    await FirebaseFirestore.instance
+        .collection('cafes')
+        .doc(widget.cafeId)
+        .collection('reviews')
+        .add(reviewData);
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('checkins')
+        .add({
+      'cafeId': widget.cafeId,
+      'cafeName': widget.cafeName,
+      'address': widget.address,
+      'review': reviewSummary,
+      'timestamp': timestamp,
+    });
+
+    Navigator.pushNamedAndRemoveUntil(context, '/map', (_) => false);
+  }
+
 }
