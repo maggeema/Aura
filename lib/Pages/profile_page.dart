@@ -24,11 +24,11 @@ class _ProfilePageState extends State<ProfilePage> {
       final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       final userData = doc.data();
       if (userData != null) {
-        final emailFromDb = userData['email'] as String?;
+        final emailFromDb = userData['email'] as String? ?? '';
         final ageFromDb = userData['age'] as String? ?? '';
 
         setState(() {
-          email = emailFromDb ?? '';
+          email = emailFromDb;
           age = ageFromDb;
           isLoading = false;
         });
@@ -48,11 +48,14 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('My Profile'),
+        title: Text(
+          'My Profile',
+          style: TextStyle(color: Color(0xFF333333), fontWeight: FontWeight.w500),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: Color(0xFF333333)),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -67,44 +70,29 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         child: SafeArea(
           child: isLoading
-            ? Center(child: CircularProgressIndicator())
-            : Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Profile avatar placeholder
-                    Center(
-                      child: CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Colors.white.withOpacity(0.7),
-                        child: Icon(
-                          Icons.person,
-                          size: 40,
-                          color: Colors.grey[400],
-                        ),
+              ? Center(child: CircularProgressIndicator())
+              : Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 40),
+
+                      // Email field
+                      _buildProfileInfo(
+                        title: 'Email',
+                        value: email.isNotEmpty ? email : 'maggeema@gmail.com',
                       ),
-                    ),
-                    SizedBox(height: 40),
-                    
-                    // Email field
-                    _buildProfileInfo(
-                      title: 'Email',
-                      value: email.isNotEmpty ? email : 'maggeema@gmail.com',
-                    ),
-                    
-                    SizedBox(height: 20),
-                    
-                    // Age field
-                    _buildProfileInfo(
-                      title: 'Age',
-                      value: age.isNotEmpty ? age : '22 years',
-                    ),
-                    
-                    // Could add more profile fields here
-                  ],
+                      SizedBox(height: 20),
+
+                      // Age field
+                      _buildProfileInfo(
+                        title: 'Age',
+                        value: age.isNotEmpty ? age : '22 years',
+                      ),
+                    ],
+                  ),
                 ),
-              ),
         ),
       ),
     );
@@ -124,9 +112,9 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             title,
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF333333), // Dark grey label
             ),
           ),
           SizedBox(height: 8),
@@ -134,7 +122,7 @@ class _ProfilePageState extends State<ProfilePage> {
             value,
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[800],
+              color: Color(0xFF333333), // Same dark grey for consistency
             ),
           ),
         ],
