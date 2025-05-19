@@ -5,6 +5,39 @@ Aura is a capstone project that delivers live, crowd-sourced updates from users 
 
 ---
 
+## 👥 Team Roles & Contributions
+
+**Gael – UX Designer and Researcher**  
+- Led user interviews to inform app design decisions.  
+- Researched design best practices aligned with our UVP.  
+- Conducted A/B testing to refine user flows.  
+- Designed all screens in Figma and ensured visual consistency.  
+- Worked with Daisy and Maggie to implement frontend designs accurately.  
+- Added test check-ins to simulate user activity and identify bugs.  
+[View all of Gael's Figma Designs](https://www.figma.com/design/6DUUuGhDWbLGhIlrt3bOif?fuid=1262812640838458674&prev-plan-id=1262812642949645873&prev-plan-type=team&prev-selected-view=recentsAndSharing)
+
+**Daisy – Frontend Developer**  
+- Built the Create Account page and Check-In interface from Figma mockups.  
+- Coded the Cafe Info Tab and linked it to Google Maps Directions.  
+- Implemented the Account and Settings sections with dynamic data display.  
+- Updated frontend layouts as new designs were delivered weekly.
+
+**Kevin – Backend Developer**  
+- Set up `login_page.dart` and configured Firebase Authentication.  
+- Connected Firestore to the Create Account and Check-In flows.  
+- Built the backend logic for streak tracking and check-in submissions.  
+- Ensured check-ins were accurately displayed across the app and stored for each user.
+
+**Maggie – Technical Project Manager**  
+- Established the app architecture and integrated Google Maps API.  
+- Assigned tasks and tracked team progress throughout development.  
+- Led debugging efforts to ensure smooth app flow and data accuracy.  
+- Compiled updates and created weekly progress presentations.
+
+**Watch our full user interface demo here**: [https://youtu.be/daS8D58eiLo](https://youtu.be/daS8D58eiLo)
+
+---
+
 ## 📱 Description of Our System
 
 **Aura** is a real-time vibe check app for cafés, built using the Flutter framework for cross-platform mobile development and Firebase for backend services. The system follows a modular structure, with each core feature organized into its own Dart file for clarity and maintainability.
